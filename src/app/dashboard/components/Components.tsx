@@ -1,10 +1,7 @@
-import { useState } from "react";
+
 import * as React from 'react';
-import ArtTrackIcon from '@mui/icons-material/ArtTrack';
-interface Props { }
 import styled from '@emotion/styled'
 
-import { useDrag, useDrop } from "react-dnd";
 import { Button } from "@mui/material";
 
 interface DraggableProps {

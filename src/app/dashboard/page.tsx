@@ -1,32 +1,17 @@
 'use client'
-
-import { useState } from "react";
-import { useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-
-
 import { NextPage } from 'next'
-import { useContext } from 'react'
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import { createTheme } from '@mui/material/styles';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { AppProvider, type Navigation } from '@toolpad/core/AppProvider';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { useDemoRouter } from '@toolpad/core/internal';
 import ComputerIcon from '@mui/icons-material/Computer';
 import Image from 'next/image';
-import BookIcon from '@mui/icons-material/Book';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import Link from 'next/link';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
-import ArtTrackIcon from '@mui/icons-material/ArtTrack';
 interface Props { }
-import { useDrag } from "react-dnd";
 import Canvas from "./components/Canvas";
+import Link from "next/link";
 
 
 
