@@ -99,7 +99,7 @@ const Page = () => {
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Link href={'/'} target=' _blank'>
 
-                    <Image src="/assets/logo.svg" alt="OnlySX" width={80} height={40} />
+                    <Image src="/assets/logo.svg" alt="" width={80} height={40} />
                 </Link>
 
             </div>
