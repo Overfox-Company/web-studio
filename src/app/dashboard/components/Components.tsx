@@ -15,7 +15,7 @@ interface DraggableProps {
 export const ButtonCustom = styled(Button)({
 
 })
-export function DraggableComponent({ onStyleChange, name, index, onDragStart, style, onDrop }: DraggableProps) {
+export function DraggableComponent({ name, index, onDragStart, style, onDrop }: DraggableProps) {
     return (
 
         <ButtonCustom

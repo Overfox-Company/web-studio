@@ -9,13 +9,13 @@ import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { useDemoRouter } from '@toolpad/core/internal';
 import ComputerIcon from '@mui/icons-material/Computer';
 import Image from 'next/image';
-interface Props { }
+interface Props { window: any }
 import Canvas from "./components/Canvas";
 import Link from "next/link";
 
 
 
-const Page: NextPage<Props> = (props: any) => {
+const Page: NextPage<Props> = (props) => {
 
     const NAVIGATION: Navigation = [
 
