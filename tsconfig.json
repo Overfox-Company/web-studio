@@ -13,9 +13,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "rules": {
-      "@typescript-eslint/no-explicit-any": "off"
-    },
     "plugins": [
       {
         "name": "next"
