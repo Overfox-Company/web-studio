@@ -2,11 +2,11 @@
 import { NextPage } from 'next'
 import { useState } from "react";
 import * as React from 'react';
-interface Props { }
-import { ButtonCustom, DraggableComponent } from './Components';
-interface Props { }
 
-const Canvas: NextPage<Props> = ({ }) => {
+import { ButtonCustom, DraggableComponent } from './Components';
+
+
+const Canvas = () => {
     const [components, setComponents] = useState<{ id: number; name: string; style: React.CSSProperties }[]>([]);
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
