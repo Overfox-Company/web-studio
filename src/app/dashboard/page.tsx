@@ -16,10 +16,10 @@ import Link from "next/link";
 interface Props {
 
 
-    window?: () => Window;
+    window: any
 }
 
-const Page: NextPage<Props> = ({ window }) => {
+const Page: NextPage<Props> = (props) => {
 
     const NAVIGATION: Navigation = [
 
@@ -95,7 +95,7 @@ const Page: NextPage<Props> = ({ window }) => {
             },
         },
     });
-    //const { window } = props;
+    const { window } = props;
     //  const { authUpload } = useContext(AppContext)
     const router = useDemoRouter('/dashboard');
     const demoWindow = window !== undefined ? window() : undefined;
