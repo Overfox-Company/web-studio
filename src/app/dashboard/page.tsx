@@ -13,11 +13,8 @@ import Canvas from "./components/Canvas";
 import Link from "next/link";
 
 
-interface Props {
-    window: any
-}
 
-const Page = (props: Props) => {
+const Page = () => {
 
     const NAVIGATION: Navigation = [
 
@@ -93,10 +90,10 @@ const Page = (props: Props) => {
             },
         },
     });
-    const { window } = props;
+    //  const { window } = props;
     //  const { authUpload } = useContext(AppContext)
     const router = useDemoRouter('/dashboard');
-    const demoWindow = window !== undefined ? window() : undefined;
+    //  const demoWindow = window !== undefined ? window() : undefined;
     const Title = () => {
         return (
             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -113,7 +110,7 @@ const Page = (props: Props) => {
         navigation={NAVIGATION}
         router={router}
         theme={demoTheme}
-        window={demoWindow}
+    //   window={demoWindow}
     >
         <DashboardLayout
             slots={{
