@@ -19,7 +19,7 @@ interface Props {
     window?: () => Window;
 }
 
-const Page: NextPage<Props> = (props) => {
+const Page: NextPage<Props> = ({ window }) => {
 
     const NAVIGATION: Navigation = [
 
@@ -95,7 +95,7 @@ const Page: NextPage<Props> = (props) => {
             },
         },
     });
-    const { window } = props;
+    //const { window } = props;
     //  const { authUpload } = useContext(AppContext)
     const router = useDemoRouter('/dashboard');
     const demoWindow = window !== undefined ? window() : undefined;
