@@ -14,12 +14,10 @@ import Link from "next/link";
 
 
 interface Props {
-
-
     window: any
 }
 
-const Page: NextPage<Props> = (props) => {
+const Page = (props: Props) => {
 
     const NAVIGATION: Navigation = [
 
