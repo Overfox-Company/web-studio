@@ -39,36 +39,36 @@ const Page: NextPage<Props> = (props: any) => {
             title: 'Dashboard',
             icon: <ComputerIcon />,
         },
-        {
-            segment: 'UploadVideos',
-            title: 'Upload videos',
-            icon: <CloudUploadIcon />,
-        },
-        {
-            segment: 'Videos',
-            title: 'Videos',
-            icon: < ArtTrackIcon />,
-        },
-        {
-            segment: 'UploadModels',
-            title: 'Upload models',
-            icon: <AssignmentIndIcon />,
-        },
-        {
-            segment: 'Models',
-            title: 'Models',
-            icon: <BookIcon />,
-        },
-        {
-            segment: 'UploadGaleries',
-            title: 'Upload galeries',
-            icon: <CloudUploadIcon />,
-        },
-        {
-            segment: 'Galery',
-            title: 'Galery',
-            icon: <DashboardIcon />,
-        },
+        /*  {
+              segment: 'UploadVideos',
+              title: 'Upload videos',
+              icon: <CloudUploadIcon />,
+          },
+          {
+              segment: 'Videos',
+              title: 'Videos',
+              icon: < ArtTrackIcon />,
+          },
+          {
+              segment: 'UploadModels',
+              title: 'Upload models',
+              icon: <AssignmentIndIcon />,
+          },
+          {
+              segment: 'Models',
+              title: 'Models',
+              icon: <BookIcon />,
+          },
+          {
+              segment: 'UploadGaleries',
+              title: 'Upload galeries',
+              icon: <CloudUploadIcon />,
+          },
+          {
+              segment: 'Galery',
+              title: 'Galery',
+              icon: <DashboardIcon />,
+          },*/
     ];
     const demoTheme = createTheme({
         cssVariables: {
