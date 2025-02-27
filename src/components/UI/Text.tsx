@@ -1,8 +1,6 @@
 import { FC } from 'react';
 import styled from '@emotion/styled';
 import { TextProps } from '@/types/App';
-
-import { Container, Item } from './Container';
 import { Typography } from '@mui/material';
 
 

@@ -1,7 +1,6 @@
 import { Avatar, List, ListItem, ListItemAvatar, ListItemButton, ListItemText } from '@mui/material'
 import { NextPage } from 'next'
 import Image from 'next/image';
-import Link from 'next/link'
 
 interface Props { image?: string, name: string, dashboard?: boolean, id?: string, size?: number, fontSize?: number }
 

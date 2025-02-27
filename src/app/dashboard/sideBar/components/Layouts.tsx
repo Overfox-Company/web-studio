@@ -1,7 +1,6 @@
 import FadeIn from '@/components/animation/FadeIn';
 import { NextPage } from 'next'
 import { useState } from 'react';
-import { DragableBasicLayout, LayoutBasic } from '../../components/Components';
 
 interface Props { }
 

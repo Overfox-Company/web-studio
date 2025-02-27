@@ -10,7 +10,7 @@ import Layouts from './components/Layouts'
 interface Props { }
 
 const SideBar: NextPage<Props> = ({ }) => {
-    const { openSideBar, setComponents, components, tab } = useContext(AppContext)
+    const { openSideBar, tab } = useContext(AppContext)
 
 
 
