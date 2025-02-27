@@ -76,8 +76,17 @@ a {
 .canvas {
   flex: 1;
   padding: 20px;
+  border-radius: 8px;
   background-color: #f0f0f0;
-  border-left: 2px solid #ccc;
+  border: 2px solid #ccc;
+  width: 1920px;
+  position: relative;
+  height: 1080px;
+  top: 5vh;
+  transform: scale(0.8);
+  /* Reduce el tamaño al 50% */
+  transform-origin: top;
+  /* Punto de origen del escalado */
 }
 
 .component {
