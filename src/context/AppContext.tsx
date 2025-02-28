@@ -11,11 +11,12 @@ type ProviderProps = {
     children?: React.ReactNode;
     className?: string;
 };
-interface ComponentType {
+export interface ComponentType {
     type: string;
     id: number;
     name: string;
-    style: React.CSSProperties
+    style: React.CSSProperties,
+    children?: ComponentType[];
 }
 type ComponentTypeArray = ComponentType[];
 type ContextData = {

@@ -57,11 +57,11 @@ const Components: NextPage<Props> = ({ }) => {
                         <div
                             key={button.id}
                         >
-                            <div draggable
-                                onDragStart={(e) => e.dataTransfer.setData("component", JSON.stringify(button))}
+                            <div
                             >
                                 <ButtonCustom
-
+                                    draggable
+                                    onDragStart={(e) => e.dataTransfer.setData("component", JSON.stringify(button))}
                                     style={button.style}
                                 >
                                     Botón {index + 1}

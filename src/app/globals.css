@@ -81,7 +81,7 @@ a {
   border: 2px solid #ccc;
   width: 1920px;
   position: relative;
-  height: 1080px;
+  min-height: 1080px;
   top: 5vh;
   transform: scale(0.8);
   /* Reduce el tamaño al 50% */

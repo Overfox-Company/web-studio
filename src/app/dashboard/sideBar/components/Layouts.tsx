@@ -12,7 +12,7 @@ const Layouts: NextPage<Props> = ({ }) => {
         {
             type: "layout",
             id: Date.now(),
-            style: { width: "200px", height: "150px", backgroundColor: "#ddd", border: "1px solid #aaa" },
+            style: { width: "200px", height: "100vh", backgroundColor: "#ddd", border: "1px solid #aaa" },
         },
     ]);
 
@@ -22,7 +22,7 @@ const Layouts: NextPage<Props> = ({ }) => {
             {
                 type: "layout",
                 id: Date.now(),
-                style: { width: "200px", height: "150px", backgroundColor: "#bbb", border: "1px solid #777" },
+                style: { width: "200px", height: "100vh", backgroundColor: "#bbb", border: "1px solid #777" },
             },
         ]);
     };
@@ -57,7 +57,7 @@ const Layouts: NextPage<Props> = ({ }) => {
                                     console.log(layout)
                                     e.dataTransfer.setData("component", JSON.stringify(layout))
                                 }}
-                                style={layout.style}
+                                style={{ ...layout.style, height: 120 }}
                             >
                                 Layout {index + 1}
                             </div>
