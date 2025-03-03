@@ -65,7 +65,10 @@ export const DragableBasicLayout = ({ children, data, index, onDragStart, style,
         </LayoutBasic>
     );
 };
-export function DraggableComponent({ name, index, onDragStart, style, onDrop, data }: DraggableProps) {
+export function DraggableComponent({ index, onDragStart, style,
+
+    //  onDrop,
+    data }: DraggableProps) {
     return (
 
         <ButtonCustom
@@ -78,9 +81,9 @@ export function DraggableComponent({ name, index, onDragStart, style, onDrop, da
                 onDragStart(index)
             }}
             onDragOver={(e) => e.preventDefault()} // Necesario para permitir drop
-            onDrop={() => onDrop(index)}
+        //   onDrop={() => onDrop(index)}
         >
-            {name}
+            {index + 1}
         </ButtonCustom>
     );
 }
