@@ -9,8 +9,8 @@ import { AppContext, ComponentType } from "@/context/AppContext";
 
 const Canvas = () => {
 
-    const { openSideBar, setComponents, components } = React.useContext(AppContext)
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const { openSideBar, setComponents, components, draggedIndex, setDraggedIndex } = React.useContext(AppContext)
+
     // Agregar un nuevo componente al lienzo basado en el tipo de componente arrastrado
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -29,7 +29,7 @@ const Canvas = () => {
                 ...prev,
                 {
                     type: parsedData.type,
-                    id: parsedData.id, // Mantiene el mismo ID
+                    id: Date.now(), // Mantiene el mismo ID
                     name: parsedData.name,
                     style: parsedData.style,
                 },
@@ -38,54 +38,6 @@ const Canvas = () => {
     };
 
 
-    const handleDropItem = (index: number, type?: string, create?: boolean, item?: any) => {
-        console.log("si entre en el drop")
-
-        if (!create) {
-            console.log("no exite create")
-            if (draggedIndex === null || draggedIndex === index) return;
-        }
-        console.log("paso el if")
-        const updatedComponents = [...components];
-        let movedItem = null;
-
-        // Solo mover el item si no estamos creando uno nuevo
-        if (!create) {
-            if (draggedIndex !== null) {
-                [movedItem] = updatedComponents.splice(draggedIndex, 1);
-            }
-        }
-
-        let newItem: ComponentType = { type: "", id: 0, name: "", style: {} };
-
-        console.log("Create:" + create)
-        console.log(item)
-        if (create) {
-            const parsedData = item;
-            newItem = {
-                type: parsedData.type,
-                id: parsedData.id, // Mantiene el mismo ID
-                name: parsedData.name,
-                style: parsedData.style,
-            }
-        }
-        if (type === "layout") {
-            console.log("debe crear un hijo")
-            // Si se arrastra un componente dentro de un layout, se anida en su propiedad `children`
-            updatedComponents[index] = {
-                ...updatedComponents[index],
-                children: [...(updatedComponents[index].children || []), create && item ? newItem : (movedItem as ComponentType)],
-            };
-        } else {
-            // Si no es un layout, se intercambia la posición
-            if (movedItem) {
-                updatedComponents.splice(index, 0, movedItem);
-            }
-        }
-
-        setComponents(updatedComponents);
-        setDraggedIndex(null);
-    };
 
 
 
@@ -99,54 +51,51 @@ const Canvas = () => {
     useEffect(() => {
         console.log(components)
     }, [components])
+    const renderComponents = (components: ComponentType[]) => {
+        return components.map((comp, index) => {
+            if (comp.type === "button") {
+                return (
+                    <DraggableComponent
+                        data={comp}
+                        style={comp.style}
+                        key={comp.id}
+                        index={index}
+                        onDragStart={handleDragStart}
+                    />
+                );
+            }
+
+            if (comp.type === "layout") {
+                return (
+                    <DragableBasicLayout
+                        data={comp}
+                        style={comp.style}
+                        key={comp.id}
+                        index={index}
+                        onDragStart={handleDragStart}
+                    >
+                        {comp.children && Array.isArray(comp.children) && renderComponents(comp.children)}
+                    </DragableBasicLayout>
+                );
+            }
+
+            return null; // Si el tipo no es reconocido, no renderiza nada
+        });
+    };
+
     return (
         <div style={{ borderRadius: 4 }}>
-
-            {/* Sidebar con elementos arrastrables */}
-
             {/* Lienzo donde se agregan los componentes */}
-            <div
-
-                className="canvas"
-                onDragOver={handleDragOver} // Necesario para permitir el `drop`
-                onDrop={handleDrop} // Maneja el `drop` y agrega el componente
-            >
-                {components.map((comp, index) => {
-
-                    if (comp.type === "button") return <DraggableComponent
-                        data={comp}
-                        style={comp.style}
-                        key={comp.id}
-                        name={"button"}
-                        index={index}
-                        onDragStart={handleDragStart}
-                        onDrop={handleDropItem}
-                    />
-                    if (comp.type === "layout") return <DragableBasicLayout
-                        data={comp}
-                        style={comp.style}
-                        key={comp.id}
-                        name={"layout"}
-                        index={index}
-                        onDragStart={handleDragStart}
-                        onDrop={handleDropItem}
-                    >
-                        {(comp.children ?? []).map((child, childIndex) => (
-                            <DraggableComponent
-                                data={child}
-                                style={child.style}
-                                key={child.id}
-                                name={"button"}
-                                index={childIndex}
-                                onDragStart={handleDragStart}
-                                onDrop={handleDropItem}
-                            />
-                        ))}
-                    </DragableBasicLayout>
-                })}
+            <div className="canvas" onDragOver={handleDragOver} onDrop={handleDrop}>
+                {renderComponents(components)}
             </div>
         </div>
     );
 }
+
+
+
+
+
 
 export default Canvas

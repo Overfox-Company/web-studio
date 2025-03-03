@@ -55,7 +55,10 @@ const Layouts: NextPage<Props> = ({ }) => {
                                 draggable
                                 onDragStart={(e) => {
                                     console.log(layout)
-                                    e.dataTransfer.setData("component", JSON.stringify(layout))
+                                    let newLayout = { ...layout }
+                                    newLayout.id = Date.now()
+                                    e.dataTransfer.setData("component", JSON.stringify(newLayout))
+                                    console.log(newLayout.id)
                                 }}
                                 style={{ ...layout.style, height: 120 }}
                             >
