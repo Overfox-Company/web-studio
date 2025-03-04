@@ -28,7 +28,7 @@ type ContextData = {
     tab: number,
     setTab: Dispatch<SetStateAction<number>>,
     draggedIndex: null | number, setDraggedIndex: Dispatch<SetStateAction<null | number>>,
-    onDrop: (e: DragEvent, parentDrop: ComponentType, index: number) => void
+    onDrop: (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number) => void
 
 };
 export const AppContext = createContext<ContextData>({
@@ -54,7 +54,7 @@ export const AppContextProvider: React.FC<ProviderProps> = ({ children }) => {
 
 
 
-    const onDrop = (e: DragEvent, parentDrop: ComponentType, index: number) => {
+    const onDrop = (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number) => {
 
 
         e.stopPropagation()
