@@ -47,6 +47,7 @@ const Canvas = () => {
     };
     const handleDragStart = (index: number) => {
         setDraggedIndex(index);
+
     };
     useEffect(() => {
         console.log(components)
@@ -60,7 +61,7 @@ const Canvas = () => {
                         style={comp.style}
                         key={comp.id}
                         index={index}
-                        onDragStart={handleDragStart}
+                        onDragStart={(e) => handleDragStart(index)}
                     />
                 );
             }
@@ -72,7 +73,7 @@ const Canvas = () => {
                         style={comp.style}
                         key={comp.id}
                         index={index}
-                        onDragStart={handleDragStart}
+                        onDragStart={(e) => handleDragStart(index)}
                     >
                         {comp.children && Array.isArray(comp.children) && renderComponents(comp.children)}
                     </DragableBasicLayout>

@@ -28,7 +28,7 @@ type ContextData = {
     tab: number,
     setTab: Dispatch<SetStateAction<number>>,
     draggedIndex: null | number, setDraggedIndex: Dispatch<SetStateAction<null | number>>,
-    onDrop: (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number) => void
+    onDrop: (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number, action: string) => void
 
 };
 export const AppContext = createContext<ContextData>({
@@ -54,29 +54,23 @@ export const AppContextProvider: React.FC<ProviderProps> = ({ children }) => {
 
 
 
-    const onDrop = (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number) => {
-
-
-        e.stopPropagation()
+    //this function 
+    const onDrop = (e: React.DragEvent<HTMLDivElement>, parentDrop: ComponentType, index: number, action: string) => {
+        e.stopPropagation();
         const component = e.dataTransfer ? e.dataTransfer.getData("component") || "{}" : "{}";
-
-        const item: ComponentType = JSON.parse(component)
-        //  console.log(item)
-        const exist = !!parentDrop.children?.find(parent => parent.id === item.id)
-        console.log(exist)
+        const item: ComponentType = JSON.parse(component);
+        const exist = !!parentDrop.children?.find(parent => parent.id === item.id);
+        console.log(parentDrop);
 
         if (exist) {
-            //  console.log("no exite create")
             if (draggedIndex === null || draggedIndex === index) return;
         }
 
         const updatedComponents = !parentDrop.id ? [...components] : [parentDrop];
-        let componentToModify = updatedComponents[index]
+        let componentToModify = updatedComponents[0];
         let movedItem = null;
 
-        // Solo mover el item si no estamos creando uno nuevo
         if (exist) {
-            // console.log("se ejecuta el moved item")
             if (draggedIndex !== null) {
                 [movedItem] = updatedComponents.splice(draggedIndex, 1);
             }
@@ -84,39 +78,45 @@ export const AppContextProvider: React.FC<ProviderProps> = ({ children }) => {
 
         let newItem: ComponentType = { type: "", id: 0, name: "", style: {} };
 
-
         if (!exist) {
             const parsedData = item;
             newItem = {
                 type: parsedData.type,
-                id: Date.now(), // Mantiene el mismo ID
+                id: Date.now(),
                 name: parsedData.name,
                 style: parsedData.style,
-            }
-        }
-        // console.log("----------")
-        //  console.log(newItem)
-        // console.log(parentDrop.type === "layout" && index)
-        // console.log("----------")
-        if (parentDrop.type === "layout") {
-            //  console.log("debe crear un hijo")
-            // Si se arrastra un componente dentro de un layout, se anida en su propiedad `children`
-            componentToModify = {
-                ...componentToModify,
-                children: [...(componentToModify.children || []), !exist ? newItem : (movedItem as ComponentType)],
             };
-        } else {
-            // Si no es un layout, se intercambia la posición
-            if (movedItem && index) {
-                updatedComponents.splice(index, 0, movedItem);
+        }
+
+        if (action === "insert") {
+            if (parentDrop.type === "layout") {
+                componentToModify = {
+                    ...componentToModify,
+                    children: [...(componentToModify.children || []), !exist ? newItem : (movedItem as ComponentType)],
+                };
+                // Eliminar la posición original del componente movido
+                console.log(movedItem)
+                console.log(draggedIndex)
+                if (draggedIndex !== null) {
+                    console.log("se ejecuta el insert y debio eliminar el componente")
+                    updatedComponents.splice(draggedIndex, 1);
+                }
+            }
+        } else if (action === "swap") {
+            if (movedItem && index !== null) {
+                const targetItem = updatedComponents[index];
+                updatedComponents[index] = movedItem;
+                if (draggedIndex !== null) {
+                    updatedComponents[draggedIndex] = targetItem;
+                }
+                console.log("si se ejecuta el swap");
             }
         }
-        //  console.log("componente a actualizar")
-        //  console.log(updatedComponents[index])
+
         const updateComponent = (components: any[], componentToModify: any): any[] => {
             return components.map(comp => {
                 if (comp.id === componentToModify.id) {
-                    return { ...comp, ...componentToModify }; // Actualiza el componente encontrado
+                    return { ...comp, ...componentToModify };
                 }
                 if (comp.children && Array.isArray(comp.children)) {
                     return { ...comp, children: updateComponent(comp.children, componentToModify) };
@@ -127,12 +127,10 @@ export const AppContextProvider: React.FC<ProviderProps> = ({ children }) => {
 
         const finalComponents = updateComponent(components, componentToModify);
 
-
-        //hay que hacer una copia de la jerarquia que esta arriba del padre
         setComponents(finalComponents);
         setDraggedIndex(null);
-
     }
+
     return (
         <AppContext.Provider
             value={{
