@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web Studio
 
-## Getting Started
+Web Studio is a visual low-code builder for modeling full-stack applications as a node graph and exporting an AI-ready application specification.
 
-First, run the development server:
+The current scaffold includes:
+
+- Next.js App Router with strict TypeScript
+- React Flow canvas for architecture modeling
+- dnd-kit sidebar drag and drop
+- craft.js page builder for visual screen composition
+- Zustand editor store
+- Zod-validated node and edge schemas
+- Material UI application shell
+- JSON exporter for machine-readable specs
+
+## Product Scope
+
+The editor can currently model:
+
+- Pages and routes
+- Reusable UI components
+- Database models
+- API routes
+- Server actions
+- External APIs
+- Client state stores
+- Data flow connections between all of the above
+
+The exported specification includes:
+
+- Pages
+- Components
+- Database schema
+- APIs
+- Actions
+- External integrations
+- State stores
+- Data flow graph
+- Derived project structure
+
+## Run
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Validation commands:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+```
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+```text
+app/
+	globals.css
+	layout.tsx
+	page.tsx
+src/
+	components/
+		providers/
+		workspace/
+	features/
+		canvas/
+		data-flow/
+		database-modeler/
+		exporter/
+		inspector/
+		nodes/
+		sidebar/
+		ui-builder/
+	lib/
+	store/
+	types/
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Key Modules
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/store/editor-store.ts`: graph state, selection, updates, connections and export.
+- `src/features/canvas/components/flow-canvas.tsx`: React Flow canvas and validation hooks.
+- `src/features/sidebar/components/node-library.tsx`: draggable architecture palette.
+- `src/features/inspector/components/node-config-panel.tsx`: node configuration editor.
+- `src/features/ui-builder/components/page-builder.tsx`: craft.js-powered page composition surface.
+- `src/features/exporter/lib/export-app-spec.ts`: JSON specification generator.
 
-## Deploy on Vercel
+## Notes On Extensibility
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The node system is designed to grow. New node categories can be added by extending:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. `src/types/editor.ts`
+2. `src/features/nodes/config/node-definitions.ts`
+3. `src/features/nodes/config/connection-rules.ts`
+4. `src/features/exporter/lib/export-app-spec.ts`
+5. `src/features/inspector/components/node-config-panel.tsx`
+
+This keeps schema, rendering, validation and export behavior aligned.
