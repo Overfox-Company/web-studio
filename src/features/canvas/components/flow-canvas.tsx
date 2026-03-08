@@ -70,10 +70,10 @@ export function FlowCanvas({ registerCanvasApi }: FlowCanvasProps) {
                 sx={{
                     height: "100%",
                     borderRadius: 0,
-                    border: isOver ? "1px solid rgba(128,237,153,0.55)" : "1px solid rgba(255,255,255,0.08)",
+                    border: isOver ? "1px solid rgba(196,196,196,0.55)" : "1px solid rgba(255,255,255,0.08)",
                     overflow: "hidden",
-                    background: "#0c0f15",
-                    boxShadow: isOver ? "0 0 0 1px rgba(128,237,153,0.18) inset" : "none",
+                    background: "#0e0e0e",
+                    boxShadow: isOver ? "0 0 0 1px rgba(196,196,196,0.18) inset" : "none",
                 }}
             >
                 <ReactFlow<ArchitectureNode, ArchitectureEdge>
@@ -97,12 +97,12 @@ export function FlowCanvas({ registerCanvasApi }: FlowCanvasProps) {
                         type: "smoothstep",
                         animated: true,
                         style: {
-                            stroke: "rgba(137, 180, 255, 0.72)",
+                            stroke: "rgba(166, 166, 166, 0.72)",
                             strokeWidth: 2,
                         },
                     }}
                     connectionLineStyle={{
-                        stroke: "rgba(128,237,153,0.9)",
+                        stroke: "rgba(196,196,196,0.9)",
                         strokeWidth: 2,
                     }}
                     isValidConnection={(connection) => {
@@ -132,7 +132,7 @@ export function FlowCanvas({ registerCanvasApi }: FlowCanvasProps) {
 
                             return "#94a3b8";
                         }}
-                        style={{ background: "#10141b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10 }}
+                        style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10 }}
                     />
                     <Controls showInteractive={false} />
                 </ReactFlow>

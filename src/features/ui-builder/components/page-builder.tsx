@@ -26,6 +26,13 @@ import { DEFAULT_PAGE_BUILDER_TREE } from "@/src/features/nodes/config/node-defi
 import { useEditorStore } from "@/src/store/editor-store";
 import type { ArchitectureNode, PageNodeData } from "@/src/types/editor";
 
+const BuilderStage = UiBuilderStage;
+const BuilderScreen = UiBuilderScreen;
+const BuilderContainer = UiBuilderContainer;
+const BuilderText = UiBuilderText;
+const BuilderButton = UiBuilderButton;
+const BuilderCard = UiBuilderCard;
+
 function isPageNode(node: ArchitectureNode): node is ArchitectureNode & { data: PageNodeData } {
     return node.data.kind === "page";
 }
@@ -49,9 +56,15 @@ function BuilderStateSync({ onChange }: { onChange: (json: string) => void }) {
 }
 
 function BuilderStructurePanel() {
-    const { nodes } = useEditor((state) => ({
+    const { actions, nodes, selectedNodeIds } = useEditor((state) => ({
         nodes: state.nodes,
+        selectedNodeIds: state.events.selected,
     }));
+    const [expandedNodeState, setExpandedNodeState] = useState<Record<string, boolean>>({});
+    const selectedNodeIdSet = useMemo(
+        () => new Set<string>(Array.from((selectedNodeIds ?? []) as Iterable<string>)),
+        [selectedNodeIds],
+    );
 
     const rootChildren = useMemo(() => nodes.ROOT?.data.nodes ?? [], [nodes]);
 
@@ -67,40 +80,95 @@ function BuilderStructurePanel() {
             (typeof node.data.props?.text === "string" && node.data.props.text) ||
             node.data.displayName ||
             "Node";
+        const isSelected = selectedNodeIdSet.has(nodeId);
+        const childNodeIds = node.data.nodes ?? [];
+        const hasChildren = childNodeIds.length > 0;
+        const isExpanded = hasChildren ? (expandedNodeState[nodeId] ?? true) : false;
 
         return (
-            <UiBox key={nodeId} sx={{ ml: depth * 1.25 }}>
-                <UiBox sx={{ borderRadius: 1.5, border: "1px solid rgba(255,255,255,0.06)", background: depth === 0 ? "#171a21" : "#12161d", px: 1, py: 0.85 }}>
-                    <UiTypography variant="caption" sx={{ color: "rgba(255,255,255,0.46)", display: "block", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                        {node.data.displayName ?? "Node"}
-                    </UiTypography>
-                    <UiTypography variant="body2" sx={{ fontWeight: 700, color: "#f5f7fb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {String(label)}
-                    </UiTypography>
+            <UiBox key={nodeId} sx={{ ml: depth === 0 ? 0 : 0.35 }}>
+                <UiBox
+                    onClick={() => actions.selectNode(nodeId)}
+                    sx={{
+                        minWidth: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                        minHeight: 34,
+                        px: 0.75,
+                        py: 0.45,
+                        borderRadius: 0.5,
+                        //  background: isSelected ? "rgba(82,217,200,0.12)" : "transparent",
+                        boxShadow: isSelected ? "inset 0 0 0 1px rgba(82,217,200,0.78)" : "none",
+                        cursor: "pointer",
+                        transition: "background-color 160ms ease, box-shadow 160ms ease",
+                        '&:hover': {
+                            background: isSelected ? "rgba(82,217,200,0.14)" : "rgba(255,255,255,0.04)",
+                        },
+                    }}
+                >
+                    <UiBox
+                        component="button"
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+
+                            if (!hasChildren) {
+                                return;
+                            }
+
+                            setExpandedNodeState((current) => ({
+                                ...current,
+                                [nodeId]: !(current[nodeId] ?? true),
+                            }));
+                        }}
+                        sx={{
+                            width: 18,
+                            height: 18,
+                            p: 0,
+                            border: 0,
+                            background: "transparent",
+                            color: hasChildren ? "rgba(255,255,255,0.62)" : "rgba(255,255,255,0.18)",
+                            fontSize: 11,
+                            lineHeight: 1,
+                            cursor: hasChildren ? "pointer" : "default",
+                            flexShrink: 0,
+                        }}
+                    >
+                        {hasChildren ? (isExpanded ? "▾" : "▸") : "•"}
+                    </UiBox>
+
+                    <UiBox sx={{ minWidth: 0, flex: 1 }}>
+
+                        <UiTypography variant="body2" sx={{ fontWeight: 400, color: "#f5f7fb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", }}>
+                            {String(label)}
+                        </UiTypography>
+                    </UiBox>
                 </UiBox>
-                {(node.data.nodes ?? []).length > 0 ? (
-                    <UiStack spacing={0.75} sx={{ mt: 0.75 }}>
-                        {(node.data.nodes ?? []).map((childId) => renderNode(childId, depth + 1))}
-                    </UiStack>
+
+                {hasChildren && isExpanded ? (
+                    <UiColumn spacing={0.15} sx={{ mt: 0.2, pl: 2.25 }}>
+                        {childNodeIds.map((childId) => renderNode(childId, depth + 1))}
+                    </UiColumn>
                 ) : null}
             </UiBox>
         );
     }
 
     return (
-        <UiColumn sx={{ minHeight: 0, overflow: "auto", p: 1, borderRight: "1px solid rgba(255,255,255,0.08)", background: "#0d1016" }}>
+        <UiColumn sx={{ minHeight: 0, overflow: "auto", p: 1, borderRight: "1px solid rgba(255,255,255,0.08)", background: "#101010" }}>
             <UiStack direction="row" spacing={0.75} sx={{ mb: 1 }}>
-                <UiTag label="Pages" sx={{ backgroundColor: "#12161d", color: "rgba(255,255,255,0.62)" }} />
-                <UiTag label="Layers" sx={{ backgroundColor: "#20242d", color: "#f5f7fb" }} />
-                <UiTag label="Assets" sx={{ backgroundColor: "#12161d", color: "rgba(255,255,255,0.62)" }} />
+                <UiTag label="Pages" sx={{ backgroundColor: "#181818", color: "rgba(255,255,255,0.62)" }} />
+                <UiTag label="Layers" sx={{ backgroundColor: "#252525", color: "#f5f7fb" }} />
+                <UiTag label="Assets" sx={{ backgroundColor: "#181818", color: "rgba(255,255,255,0.62)" }} />
             </UiStack>
             <UiField label="Search" placeholder="Search layers..." />
-            <UiColumn spacing={1} sx={{ mt: 1.5 }}>
+            <UiColumn spacing={0.8} sx={{ mt: 1.5 }}>
                 <UiTypography variant="overline" sx={{ color: "rgba(255,255,255,0.42)", letterSpacing: "0.16em" }}>
                     Structure
                 </UiTypography>
                 {rootChildren.length > 0 ? rootChildren.map((nodeId) => renderNode(nodeId)) : (
-                    <UiBox sx={{ borderRadius: 1.5, border: "1px solid rgba(255,255,255,0.06)", background: "#12161d", px: 1.1, py: 1.1 }}>
+                    <UiBox sx={{ borderRadius: 1.5, border: "1px solid rgba(255,255,255,0.06)", background: "#181818", px: 1.1, py: 1.1 }}>
                         <UiTypography variant="body2" sx={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.55 }}>
                             Drag items into the stage to build the layer tree.
                         </UiTypography>
@@ -135,6 +203,34 @@ function PageBuilderEditor({
         const nextZoom = Math.max(0.25, Math.min(2, Number(value.toFixed(2))));
         setStudioZoom(nextZoom);
     }, []);
+
+    const applyZoomAtPoint = useCallback((nextZoomValue: number, anchorX: number, anchorY: number) => {
+        const nextZoom = Math.max(0.25, Math.min(2, Number(nextZoomValue.toFixed(2))));
+
+        if (nextZoom === studioZoom) {
+            return;
+        }
+
+        const worldX = (anchorX - studioOffset.x) / studioZoom;
+        const worldY = (anchorY - studioOffset.y) / studioZoom;
+
+        setStudioZoom(nextZoom);
+        setStudioOffset({
+            x: anchorX - worldX * nextZoom,
+            y: anchorY - worldY * nextZoom,
+        });
+    }, [studioOffset.x, studioOffset.y, studioZoom]);
+
+    const applyZoomFromViewportCenter = useCallback((nextZoomValue: number) => {
+        const viewport = stageViewportRef.current;
+
+        if (!viewport) {
+            setClampedZoom(nextZoomValue);
+            return;
+        }
+
+        applyZoomAtPoint(nextZoomValue, viewport.clientWidth / 2, viewport.clientHeight / 2);
+    }, [applyZoomAtPoint, setClampedZoom]);
 
     const centerStage = useCallback((zoom: number) => {
         const viewport = stageViewportRef.current;
@@ -183,21 +279,9 @@ function PageBuilderEditor({
         const pointerX = event.clientX - rect.left;
         const pointerY = event.clientY - rect.top;
         const delta = event.deltaY > 0 ? -0.08 : 0.08;
-        const nextZoom = Math.max(0.25, Math.min(2, Number((studioZoom + delta).toFixed(2))));
 
-        if (nextZoom === studioZoom) {
-            return;
-        }
-
-        const worldX = (pointerX - studioOffset.x) / studioZoom;
-        const worldY = (pointerY - studioOffset.y) / studioZoom;
-
-        setStudioZoom(nextZoom);
-        setStudioOffset({
-            x: pointerX - worldX * nextZoom,
-            y: pointerY - worldY * nextZoom,
-        });
-    }, [studioOffset.x, studioOffset.y, studioZoom]);
+        applyZoomAtPoint(studioZoom + delta, pointerX, pointerY);
+    }, [applyZoomAtPoint, studioZoom]);
 
     const stopPanning = useCallback(() => {
         isPanningRef.current = false;
@@ -206,7 +290,15 @@ function PageBuilderEditor({
     }, []);
 
     const handleViewportMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-        const shouldPan = event.button === 1 || (event.button === 0 && spacePressed);
+        const target = event.target as HTMLElement;
+        const clickedCanvasSurface = Boolean(target.closest('[data-page-canvas-surface="true"]'));
+        const clickedBuilderNode = Boolean(target.closest('[data-builder-node-root="true"]'));
+        const clickedResizeHandle = Boolean(target.closest('[data-builder-resize-handle="true"]'));
+        const shouldPan = event.button === 1 || (
+            event.button === 0 && (
+                spacePressed || (clickedCanvasSurface && !clickedBuilderNode && !clickedResizeHandle)
+            )
+        );
 
         if (!shouldPan) {
             return;
@@ -287,12 +379,12 @@ function PageBuilderEditor({
                 Insert
             </UiTypography>
             <UiStack direction={variant === "studio" ? "column" : "row"} flexWrap="wrap" useFlexGap gap={1}>
-                <UiBuilderToolChip label="Screen 1440" element={<Element is={UiBuilderScreen} canvas title="Desktop 1440" width={1440} minHeight={900} />} />
-                <UiBuilderToolChip label="Text" element={<UiBuilderText text="New copy block" variant="body" />} />
-                <UiBuilderToolChip label="Heading" element={<UiBuilderText text="Section heading" variant="heading" />} />
-                <UiBuilderToolChip label="Button" element={<UiBuilderButton text="Primary action" tone="primary" />} />
-                <UiBuilderToolChip label="Card" element={<UiBuilderCard title="Feature card" body="Describe the capability exposed by this page." />} />
-                <UiBuilderToolChip label="Section" element={<Element is={UiBuilderContainer} canvas title="New section" accent="#F4D35E" />} />
+                <UiBuilderToolChip label="Screen 1440" element={<Element is={BuilderScreen} canvas title="Desktop 1440" width={1440} minHeight={900} />} />
+                <UiBuilderToolChip label="Text" element={<BuilderText text="New copy block" variant="body" />} />
+                <UiBuilderToolChip label="Heading" element={<BuilderText text="Section heading" variant="heading" />} />
+                <UiBuilderToolChip label="Button" element={<BuilderButton text="Primary action" tone="primary" />} />
+                <UiBuilderToolChip label="Card" element={<Element is={BuilderCard} canvas title="Feature card" body="Describe the capability exposed by this page." />} />
+                <UiBuilderToolChip label="Section" element={<Element is={BuilderContainer} canvas title="New section" accent="#F4D35E" />} />
             </UiStack>
         </UiColumn>
     );
@@ -302,7 +394,7 @@ function PageBuilderEditor({
             sx={{
                 borderRadius: variant === "studio" ? 3 : 2.5,
                 border: "1px solid rgba(255,255,255,0.08)",
-                backgroundColor: "#0d1016",
+                backgroundColor: "#101010",
                 p: 0,
                 minHeight: variant === "studio" ? "100%" : 320,
                 overflow: "auto",
@@ -313,37 +405,54 @@ function PageBuilderEditor({
         </UiBox>
     );
 
-    const studioViewportControls = (
+    const studioBottomBar = (
         <UiStack
             direction="row"
             spacing={1}
             alignItems="center"
+            justifyContent="space-between"
             sx={{
                 position: "absolute",
                 left: "50%",
                 bottom: 18,
                 transform: "translateX(-50%)",
                 zIndex: 20,
-                px: 1,
+                px: 1.1,
                 py: 1,
                 borderRadius: 2.5,
                 border: "1px solid rgba(255,255,255,0.08)",
                 background: "rgba(16,20,28,0.92)",
+                width: { xs: "calc(100% - 24px)", sm: 620 },
+                maxWidth: "calc(100% - 24px)",
             }}
         >
-            <UiGhostButton sx={{ minHeight: 32, minWidth: 32, px: 1.2 }} onClick={() => setClampedZoom(studioZoom - 0.1)}>
-                -
-            </UiGhostButton>
-            <UiTag label={`${Math.round(studioZoom * 100)}%`} sx={{ backgroundColor: "#161b24", color: "#f5f7fb", minWidth: 64 }} />
-            <UiGhostButton sx={{ minHeight: 32, minWidth: 32, px: 1.2 }} onClick={() => setClampedZoom(studioZoom + 0.1)}>
-                +
-            </UiGhostButton>
-            <UiGhostButton sx={{ minHeight: 32 }} onClick={() => setClampedZoom(1)}>
-                Reset
-            </UiGhostButton>
-            <UiGhostButton sx={{ minHeight: 32 }} onClick={handleFitStudio}>
-                Fit
-            </UiGhostButton>
+            <UiStack direction="row" spacing={1} alignItems="center">
+                <UiGhostButton sx={{ minHeight: 34 }} onClick={() => setIsInsertMenuOpen((current) => !current)}>
+                    {isInsertMenuOpen ? "Hide Items" : "Insert Items"}
+                </UiGhostButton>
+                <UiTypography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", display: { xs: "none", md: "block" } }}>
+                    Drag components from this tray into the canvas
+                </UiTypography>
+            </UiStack>
+
+            <UiStack direction="row" spacing={1} alignItems="center">
+                <UiGhostButton sx={{ minHeight: 32, minWidth: 32, px: 1.2 }} onClick={() => applyZoomFromViewportCenter(studioZoom - 0.1)}>
+                    -
+                </UiGhostButton>
+                <UiTag label={`${Math.round(studioZoom * 100)}%`} sx={{ backgroundColor: "#161b24", color: "#f5f7fb", minWidth: 64 }} />
+                <UiGhostButton sx={{ minHeight: 32, minWidth: 32, px: 1.2 }} onClick={() => applyZoomFromViewportCenter(studioZoom + 0.1)}>
+                    +
+                </UiGhostButton>
+                <UiGhostButton sx={{ minHeight: 32 }} onClick={() => {
+                    setStudioZoom(1);
+                    requestAnimationFrame(() => centerStage(1));
+                }}>
+                    Reset
+                </UiGhostButton>
+                <UiGhostButton sx={{ minHeight: 32 }} onClick={handleFitStudio}>
+                    Fit
+                </UiGhostButton>
+            </UiStack>
         </UiStack>
     );
 
@@ -397,12 +506,12 @@ function PageBuilderEditor({
                 <Editor
                     key={selectedPage.id}
                     resolver={{
-                        BuilderStage: UiBuilderStage,
-                        BuilderScreen: UiBuilderScreen,
-                        BuilderContainer: UiBuilderContainer,
-                        BuilderText: UiBuilderText,
-                        BuilderButton: UiBuilderButton,
-                        BuilderCard: UiBuilderCard,
+                        BuilderStage,
+                        BuilderScreen,
+                        BuilderContainer,
+                        BuilderText,
+                        BuilderButton,
+                        BuilderCard,
                         UiBuilderStage,
                         UiBuilderScreen,
                         UiBuilderContainer,
@@ -424,12 +533,12 @@ function PageBuilderEditor({
         <Editor
             key={selectedPage.id}
             resolver={{
-                BuilderStage: UiBuilderStage,
-                BuilderScreen: UiBuilderScreen,
-                BuilderContainer: UiBuilderContainer,
-                BuilderText: UiBuilderText,
-                BuilderButton: UiBuilderButton,
-                BuilderCard: UiBuilderCard,
+                BuilderStage,
+                BuilderScreen,
+                BuilderContainer,
+                BuilderText,
+                BuilderButton,
+                BuilderCard,
                 UiBuilderStage,
                 UiBuilderScreen,
                 UiBuilderContainer,
@@ -441,16 +550,16 @@ function PageBuilderEditor({
             <UiBox
                 sx={{
                     height: "100vh",
-                    background: "#0a0c12",
+                    background: "#0a0a0a",
                     display: "grid",
                     gridTemplateRows: "48px minmax(0, 1fr)",
-                    gridTemplateColumns: { xs: "1fr", lg: "148px minmax(0, 1fr)" },
+                    gridTemplateColumns: { xs: "1fr", lg: "250px minmax(0, 1fr)" },
                     overflow: "hidden",
                 }}
             >
                 {studioToolbar}
 
-                <UiBox sx={{ display: { xs: "none", lg: "block" }, minHeight: 0 }}>
+                <UiBox sx={{ display: { xs: "none", lg: "block" }, minHeight: 0, width: 250, minWidth: 250, maxWidth: 250 }}>
                     <BuilderStructurePanel />
                 </UiBox>
 
@@ -463,7 +572,7 @@ function PageBuilderEditor({
                         p: 0,
                         position: "relative",
                         cursor: isPanning || spacePressed ? "grab" : "default",
-                        background: "#151515",
+                        background: "#111111",
                     }}
                     onWheel={handleViewportWheel}
                     onMouseDown={handleViewportMouseDown}
@@ -477,6 +586,7 @@ function PageBuilderEditor({
                             inset: 0,
                             overflow: "hidden",
                         }}
+                        data-page-canvas-surface="true"
                     >
                         <UiBox
                             sx={{
@@ -524,36 +634,30 @@ function PageBuilderEditor({
                             opacity: 0.5,
                         }}
                     />
-                    {studioViewportControls}
-                    <UiBox
-                        sx={{
-                            position: "absolute",
-                            left: "50%",
-                            bottom: 72,
-                            transform: "translateX(-50%)",
-                            zIndex: 21,
-                            width: { xs: "calc(100% - 24px)", sm: 520 },
-                            maxWidth: "calc(100% - 24px)",
-                            borderRadius: 2.5,
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            background: "rgba(10,12,18,0.95)",
-                            overflow: "hidden",
-                        }}
-                    >
-                        {isInsertMenuOpen ? (
-                            <UiBox sx={{ p: 1.25, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                                {toolbox}
-                            </UiBox>
-                        ) : null}
-                        <UiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ p: 1 }}>
-                            <UiGhostButton sx={{ minHeight: 34 }} onClick={() => setIsInsertMenuOpen((current) => !current)}>
-                                {isInsertMenuOpen ? "Hide Items" : "Insert Items"}
-                            </UiGhostButton>
-                            <UiTypography variant="caption" sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                Drag components from this tray into the canvas
-                            </UiTypography>
-                        </UiStack>
-                    </UiBox>
+                    {isInsertMenuOpen ? (
+                        <UiBox
+                            sx={{
+                                position: "absolute",
+                                left: "50%",
+                                bottom: 74,
+                                transform: "translateX(-50%)",
+                                zIndex: 21,
+                                width: { xs: "calc(100% - 24px)", sm: 620 },
+                                maxWidth: "calc(100% - 24px)",
+                                borderRadius: 2.5,
+                                border: "1px solid rgba(255,255,255,0.08)",
+                                background: "rgba(10,12,18,0.97)",
+                                overflow: "hidden",
+                            }}
+                        >
+                            {isInsertMenuOpen ? (
+                                <UiBox sx={{ p: 1.25, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                    {toolbox}
+                                </UiBox>
+                            ) : null}
+                        </UiBox>
+                    ) : null}
+                    {studioBottomBar}
                 </UiBox>
             </UiBox>
         </Editor>

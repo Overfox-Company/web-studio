@@ -11,8 +11,8 @@ export const appTheme = createTheme({
             main: "#4cc9f0",
         },
         background: {
-            default: "#0a0c12",
-            paper: "#11141b",
+            default: "#0a0a0a",
+            paper: "#131313",
         },
         text: {
             primary: "#f5f7fb",
@@ -24,7 +24,7 @@ export const appTheme = createTheme({
         borderRadius: 12,
     },
     typography: {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: "var(--font-inter)",
         h3: {
             fontWeight: 700,
             letterSpacing: "-0.05em",
@@ -39,7 +39,7 @@ export const appTheme = createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: "none",
-                    backgroundColor: "#11141b",
+                    backgroundColor: "#131313",
                 },
             },
         },

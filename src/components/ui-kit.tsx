@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useState, type ReactElement, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from "react";
 
 import { useEditor, useNode } from "@craftjs/core";
 import {
@@ -41,9 +41,19 @@ import {
 import { alpha, styled } from "@mui/material/styles";
 
 const surfaceBorder = "1px solid rgba(255,255,255,0.08)";
-const surfaceBackground = "#11141b";
-const raisedBackground = "#151922";
-const codeBackground = "#0d1016";
+const surfaceBackground = "#131313";
+const raisedBackground = "#181818";
+const codeBackground = "#101010";
+const builderSelectionColor = "#52d9c8";
+
+type BuilderResizeDirection = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+interface BuilderResizableOptions {
+    enabled: boolean;
+    minWidth?: number;
+    minHeight?: number;
+    onResize: (size: { width: number; height: number }) => void;
+}
 
 export const UiBox = Box;
 export const UiStack = Stack;
@@ -68,7 +78,7 @@ export const UiSubtlePanel = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(2.25),
     borderRadius: 12,
     border: surfaceBorder,
-    backgroundColor: "#10141c",
+    backgroundColor: "#161616",
     boxShadow: "none",
 }));
 
@@ -113,7 +123,7 @@ export const UiButton = styled(Button)(({ theme }) => ({
 
 export const UiChip = styled(Chip)(() => ({
     borderRadius: 8,
-    backgroundColor: "#141922",
+    backgroundColor: "#191919",
     color: "#f5f7fb",
     fontWeight: 700,
     border: surfaceBorder,
@@ -136,7 +146,7 @@ export const UiMetricChip = styled(Chip)(({ theme }) => ({
 export const UiTextField = styled(TextField)(({ theme }) => ({
     ".MuiOutlinedInput-root": {
         borderRadius: 10,
-        backgroundColor: "#0f131a",
+        backgroundColor: "#141414",
         transition: "border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease",
         ".MuiOutlinedInput-notchedOutline": {
             borderColor: "rgba(255,255,255,0.1)",
@@ -145,7 +155,7 @@ export const UiTextField = styled(TextField)(({ theme }) => ({
             borderColor: "rgba(255,255,255,0.18)",
         },
         "&.Mui-focused": {
-            backgroundColor: "#111722",
+            backgroundColor: "#1a1a1a",
             boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.14)}`,
         },
         "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
@@ -236,6 +246,178 @@ export function UiSubtlePanelShell({ children, ...props }: PaperProps) {
 
 export function UiCardShell({ children, ...props }: BoxProps) {
     return <UiCard {...props}>{children}</UiCard>;
+}
+
+function getBuilderSelectionStyles(isSelected: boolean) {
+    return {
+        transition: "border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease",
+        '&::after': {
+            content: '""',
+            position: "absolute",
+            inset: -6,
+            borderRadius: "inherit",
+            border: `2px solid ${builderSelectionColor}`,
+            boxShadow: `0 0 0 4px ${alpha(builderSelectionColor, 0.18)}`,
+            opacity: isSelected ? 1 : 0,
+            pointerEvents: "none",
+            transition: "opacity 160ms ease",
+        },
+    };
+}
+
+function getResizeCursor(direction: BuilderResizeDirection) {
+    switch (direction) {
+        case "n":
+        case "s":
+            return "ns-resize";
+        case "e":
+        case "w":
+            return "ew-resize";
+        case "ne":
+        case "sw":
+            return "nesw-resize";
+        case "nw":
+        case "se":
+            return "nwse-resize";
+        default:
+            return "default";
+    }
+}
+
+function useBuilderResizable({ enabled, minWidth = 72, minHeight = 40, onResize }: BuilderResizableOptions) {
+    const elementRef = useRef<HTMLElement | null>(null);
+    const resizeSessionRef = useRef<{
+        direction: BuilderResizeDirection;
+        startX: number;
+        startY: number;
+        startWidth: number;
+        startHeight: number;
+    } | null>(null);
+    const onResizeRef = useRef(onResize);
+
+    useEffect(() => {
+        onResizeRef.current = onResize;
+    }, [onResize]);
+
+    const stopResize = useCallback(() => {
+        resizeSessionRef.current = null;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+    }, []);
+
+    useEffect(() => stopResize, [stopResize]);
+
+    useEffect(() => {
+        function handleMouseMove(event: MouseEvent) {
+            const session = resizeSessionRef.current;
+
+            if (!session) {
+                return;
+            }
+
+            const deltaX = event.clientX - session.startX;
+            const deltaY = event.clientY - session.startY;
+            const widthDelta = session.direction.includes("w") ? -deltaX : session.direction.includes("e") ? deltaX : 0;
+            const heightDelta = session.direction.includes("n") ? -deltaY : session.direction.includes("s") ? deltaY : 0;
+
+            onResizeRef.current({
+                width: Math.max(minWidth, Math.round(session.startWidth + widthDelta)),
+                height: Math.max(minHeight, Math.round(session.startHeight + heightDelta)),
+            });
+        }
+
+        function handleMouseUp() {
+            stopResize();
+        }
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [minHeight, minWidth, stopResize]);
+
+    const setElementRef = useCallback((element: HTMLElement | null) => {
+        elementRef.current = element;
+    }, []);
+
+    const startResize = useCallback((direction: BuilderResizeDirection, event: ReactMouseEvent<HTMLElement>) => {
+        if (!enabled || !elementRef.current) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const rect = elementRef.current.getBoundingClientRect();
+
+        resizeSessionRef.current = {
+            direction,
+            startX: event.clientX,
+            startY: event.clientY,
+            startWidth: rect.width,
+            startHeight: rect.height,
+        };
+
+        document.body.style.cursor = getResizeCursor(direction);
+        document.body.style.userSelect = "none";
+    }, [enabled]);
+
+    const resizeOverlay = enabled ? (
+        <>
+            <UiBox
+                onMouseDown={(event) => startResize("n", event)}
+                data-builder-resize-handle="true"
+                sx={{ position: "absolute", top: 0, left: 12, right: 12, height: 8, cursor: "ns-resize", zIndex: 4 }}
+            />
+            <UiBox
+                onMouseDown={(event) => startResize("s", event)}
+                data-builder-resize-handle="true"
+                sx={{ position: "absolute", bottom: 0, left: 12, right: 12, height: 8, cursor: "ns-resize", zIndex: 4 }}
+            />
+            <UiBox
+                onMouseDown={(event) => startResize("w", event)}
+                data-builder-resize-handle="true"
+                sx={{ position: "absolute", top: 12, bottom: 12, left: 0, width: 8, cursor: "ew-resize", zIndex: 4 }}
+            />
+            <UiBox
+                onMouseDown={(event) => startResize("e", event)}
+                data-builder-resize-handle="true"
+                sx={{ position: "absolute", top: 12, bottom: 12, right: 0, width: 8, cursor: "ew-resize", zIndex: 4 }}
+            />
+            {([
+                ["nw", { top: 2, left: 2 }],
+                ["ne", { top: 2, right: 2 }],
+                ["sw", { bottom: 2, left: 2 }],
+                ["se", { bottom: 2, right: 2 }],
+            ] as const).map(([direction, position]) => (
+                <UiBox
+                    key={direction}
+                    onMouseDown={(event) => startResize(direction, event)}
+                    data-builder-resize-handle="true"
+                    sx={{
+                        position: "absolute",
+                        width: 10,
+                        height: 10,
+                        borderRadius: 0.75,
+                        border: `1px solid ${builderSelectionColor}`,
+                        background: "#0f1115",
+                        boxShadow: `0 0 0 2px ${alpha(builderSelectionColor, 0.22)}`,
+                        cursor: getResizeCursor(direction),
+                        zIndex: 5,
+                        ...position,
+                    }}
+                />
+            ))}
+        </>
+    ) : null;
+
+    return {
+        resizeOverlay,
+        setElementRef,
+    };
 }
 
 export function UiPrimaryButton(props: ButtonProps) {
@@ -359,38 +541,63 @@ export const UiPaletteCard = forwardRef<HTMLDivElement, UiPaletteCardProps>(func
     );
 });
 
-export function UiBuilderContainer({ title, accent, children }: { title: string; accent: string; children?: ReactNode }) {
+export function UiBuilderContainer({ title, accent, width, height, children }: { title: string; accent: string; width?: number; height?: number; children?: ReactNode }) {
     const {
         connectors: { connect, drag },
-    } = useNode();
+        actions: { setProp },
+        isSelected,
+    } = useNode((node) => ({
+        isSelected: node.events.selected,
+    }));
+    const { resizeOverlay, setElementRef } = useBuilderResizable({
+        enabled: isSelected,
+        minWidth: 180,
+        minHeight: 120,
+        onResize: ({ width: nextWidth, height: nextHeight }) => {
+            setProp((props: { width?: number; height?: number }) => {
+                props.width = nextWidth;
+                props.height = nextHeight;
+            }, 16);
+        },
+    });
 
     return (
         <UiPanelShell
+            data-builder-node-root="true"
             ref={(ref) => {
+                setElementRef(ref as HTMLElement | null);
                 if (ref) {
                     connect(drag(ref as HTMLElement));
                 }
             }}
             sx={{
+                position: "relative",
+                width,
+                height,
                 p: 2.25,
                 borderRadius: 2.5,
-                minHeight: 180,
+                minHeight: height ?? 180,
                 border: `1px solid ${accent}44`,
                 background: "#131821",
+                ...getBuilderSelectionStyles(isSelected),
             }}
         >
             <UiTypography variant="subtitle2" sx={{ color: accent, fontWeight: 700, mb: 1.25 }}>
                 {title}
             </UiTypography>
             <UiStack spacing={1.2}>{children}</UiStack>
+            {resizeOverlay}
         </UiPanelShell>
     );
 }
 
 UiBuilderContainer.craft = {
+    displayName: "BuilderContainer",
     props: {
         title: "Section",
         accent: "#80ED99",
+        width: undefined,
+        height: undefined,
     },
 };
 
@@ -431,20 +638,40 @@ export function UiBuilderScreen({
     title,
     width,
     minHeight,
+    height,
     children,
 }: {
     title: string;
     width: number;
     minHeight: number;
+    height?: number;
     children?: ReactNode;
 }) {
     const {
         connectors: { connect, drag },
-    } = useNode();
+        actions: { setProp },
+        isSelected,
+    } = useNode((node) => ({
+        isSelected: node.events.selected,
+    }));
+    const resolvedHeight = height ?? minHeight;
+    const { resizeOverlay, setElementRef } = useBuilderResizable({
+        enabled: isSelected,
+        minWidth: 320,
+        minHeight: 240,
+        onResize: ({ width: nextWidth, height: nextHeight }) => {
+            setProp((props: { width?: number; height?: number }) => {
+                props.width = nextWidth;
+                props.height = nextHeight;
+            }, 16);
+        },
+    });
 
     return (
         <UiBox
+            data-builder-node-root="true"
             ref={(ref) => {
+                setElementRef(ref as HTMLElement | null);
                 if (ref) {
                     connect(drag(ref as HTMLElement));
                 }
@@ -452,13 +679,17 @@ export function UiBuilderScreen({
             sx={{
                 width,
                 maxWidth: "100%",
-                minHeight,
+                minHeight: resolvedHeight,
+                height: resolvedHeight,
                 borderRadius: 3,
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: `1px solid ${isSelected ? builderSelectionColor : "rgba(255,255,255,0.08)"}`,
                 background: "#f7f8fb",
-                boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
+                boxShadow: isSelected
+                    ? `0 30px 80px rgba(0,0,0,0.28), 0 0 0 3px ${alpha(builderSelectionColor, 0.9)}, 0 0 0 8px ${alpha(builderSelectionColor, 0.18)}`
+                    : "0 30px 80px rgba(0,0,0,0.28)",
                 overflow: "hidden",
                 position: "relative",
+                ...getBuilderSelectionStyles(isSelected),
             }}
         >
             <UiBox
@@ -485,7 +716,8 @@ export function UiBuilderScreen({
 
             <UiBox
                 sx={{
-                    minHeight: minHeight - 42,
+                    minHeight: Math.max(resolvedHeight - 42, 0),
+                    height: Math.max(resolvedHeight - 42, 0),
                     background: "#ffffff",
                     color: "#0f172a",
                     p: 3,
@@ -493,6 +725,7 @@ export function UiBuilderScreen({
             >
                 {children}
             </UiBox>
+            {resizeOverlay}
         </UiBox>
     );
 }
@@ -503,91 +736,173 @@ UiBuilderScreen.craft = {
         title: "Desktop Screen",
         width: 1440,
         minHeight: 900,
+        height: undefined,
     },
 };
 
-export function UiBuilderText({ text, variant }: { text: string; variant: "heading" | "body" }) {
+export function UiBuilderText({ text, variant, width, height }: { text: string; variant: "heading" | "body"; width?: number; height?: number }) {
     const {
         connectors: { connect, drag },
-    } = useNode();
+        actions: { setProp },
+        isSelected,
+    } = useNode((node) => ({
+        isSelected: node.events.selected,
+    }));
+    const { resizeOverlay, setElementRef } = useBuilderResizable({
+        enabled: isSelected,
+        minWidth: 80,
+        minHeight: variant === "heading" ? 42 : 24,
+        onResize: ({ width: nextWidth, height: nextHeight }) => {
+            setProp((props: { width?: number; height?: number }) => {
+                props.width = nextWidth;
+                props.height = nextHeight;
+            }, 16);
+        },
+    });
 
     return (
         <UiBox
+            data-builder-node-root="true"
             ref={(ref) => {
+                setElementRef(ref as HTMLElement | null);
                 if (ref) {
                     connect(drag(ref as HTMLElement));
                 }
             }}
             sx={{
+                position: "relative",
+                display: "inline-block",
+                width,
+                minHeight: height,
+                height,
+                borderRadius: 1.5,
                 fontSize: variant === "heading" ? 28 : 14,
                 fontWeight: variant === "heading" ? 700 : 500,
                 lineHeight: variant === "heading" ? 1.1 : 1.65,
                 color: variant === "heading" ? "#f8fafc" : "rgba(230,236,255,0.74)",
+                overflow: height ? "hidden" : undefined,
+                ...getBuilderSelectionStyles(isSelected),
             }}
         >
             {text}
+            {resizeOverlay}
         </UiBox>
     );
 }
 
 UiBuilderText.craft = {
+    displayName: "BuilderText",
     props: {
         text: "Text block",
         variant: "body",
+        width: undefined,
+        height: undefined,
     },
 };
 
-export function UiBuilderButton({ text, tone }: { text: string; tone: "primary" | "secondary" }) {
+export function UiBuilderButton({ text, tone, width, height }: { text: string; tone: "primary" | "secondary"; width?: number; height?: number }) {
     const {
         connectors: { connect, drag },
-    } = useNode();
+        actions: { setProp },
+        isSelected,
+    } = useNode((node) => ({
+        isSelected: node.events.selected,
+    }));
+    const { resizeOverlay, setElementRef } = useBuilderResizable({
+        enabled: isSelected,
+        minWidth: 72,
+        minHeight: 36,
+        onResize: ({ width: nextWidth, height: nextHeight }) => {
+            setProp((props: { width?: number; height?: number }) => {
+                props.width = nextWidth;
+                props.height = nextHeight;
+            }, 16);
+        },
+    });
 
     return (
         <UiBox
+            data-builder-node-root="true"
             ref={(ref) => {
+                setElementRef(ref as HTMLElement | null);
                 if (ref) {
                     connect(drag(ref as HTMLElement));
                 }
             }}
             sx={{
+                position: "relative",
                 alignSelf: "flex-start",
+                width,
+                minHeight: height,
+                height,
                 borderRadius: 2,
                 px: 2,
                 py: 1,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
                 fontWeight: 700,
                 fontSize: 13,
                 color: tone === "primary" ? "#080a0f" : "#e2e8f0",
                 background: tone === "primary" ? "#f5f7fb" : "#161b24",
+                ...getBuilderSelectionStyles(isSelected),
             }}
         >
             {text}
+            {resizeOverlay}
         </UiBox>
     );
 }
 
 UiBuilderButton.craft = {
+    displayName: "BuilderButton",
     props: {
         text: "Action",
         tone: "primary",
+        width: undefined,
+        height: undefined,
     },
 };
 
-export function UiBuilderCard({ title, body }: { title: string; body: string }) {
+export function UiBuilderCard({ title, body, width, height, children }: { title: string; body: string; width?: number; height?: number; children?: ReactNode }) {
     const {
         connectors: { connect, drag },
-    } = useNode();
+        actions: { setProp },
+        isSelected,
+    } = useNode((node) => ({
+        isSelected: node.events.selected,
+    }));
+    const { resizeOverlay, setElementRef } = useBuilderResizable({
+        enabled: isSelected,
+        minWidth: 160,
+        minHeight: 96,
+        onResize: ({ width: nextWidth, height: nextHeight }) => {
+            setProp((props: { width?: number; height?: number }) => {
+                props.width = nextWidth;
+                props.height = nextHeight;
+            }, 16);
+        },
+    });
 
     return (
         <UiSubtlePanelShell
+            data-builder-node-root="true"
             ref={(ref) => {
+                setElementRef(ref as HTMLElement | null);
                 if (ref) {
                     connect(drag(ref as HTMLElement));
                 }
             }}
             sx={{
+                position: "relative",
+                width,
+                minHeight: height,
+                height,
                 p: 1.5,
                 borderRadius: 2.5,
                 backgroundColor: raisedBackground,
+                overflow: height ? "hidden" : undefined,
+                ...getBuilderSelectionStyles(isSelected),
             }}
         >
             <UiTypography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.6 }}>
@@ -596,14 +911,19 @@ export function UiBuilderCard({ title, body }: { title: string; body: string }) 
             <UiTypography variant="body2" sx={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.55 }}>
                 {body}
             </UiTypography>
+            {children ? <UiStack spacing={1} sx={{ mt: 1.2 }}>{children}</UiStack> : null}
+            {resizeOverlay}
         </UiSubtlePanelShell>
     );
 }
 
 UiBuilderCard.craft = {
+    displayName: "BuilderCard",
     props: {
         title: "Card title",
         body: "Short explanatory copy.",
+        width: undefined,
+        height: undefined,
     },
 };
 
