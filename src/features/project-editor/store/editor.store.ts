@@ -11,13 +11,24 @@ import type {
     ProjectEdge,
     ProjectNodeKind,
 } from "@/src/features/project-editor/types/editor.types";
+import { canConnect } from "@/src/features/project-editor/utils/can-connect";
 import { createNodeDefaults, touchNode } from "@/src/features/project-editor/utils/create-node-defaults";
+import { normalizeProjectState } from "@/src/features/project-editor/utils/normalize-project-state";
+import { createSocketHandleId } from "@/src/features/project-editor/utils/socket-types";
+
+interface HoveredSocketState {
+    nodeId: string;
+    handleId: string;
+}
 
 interface ProjectEditorRuntimeStore {
     dragPreview: ProjectEditorDragPreview | null;
+    hoveredSocket: HoveredSocketState | null;
     startDragPreview: (kind: ProjectNodeKind) => void;
     updateDragPreview: (position: { x: number; y: number } | null, isOverCanvas: boolean) => void;
     clearDragPreview: () => void;
+    setHoveredSocket: (nodeId: string, handleId: string) => void;
+    clearHoveredSocket: () => void;
 }
 
 interface ProjectEditorStore {
@@ -70,7 +81,7 @@ function createEmptyProject(projectId = "demo-project", name = "Project Atlas"):
         name,
         nodes: [],
         edges: [],
-        version: 1,
+        version: 2,
         updatedAt: new Date().toISOString(),
     });
 }
@@ -78,8 +89,10 @@ function createEmptyProject(projectId = "demo-project", name = "Project Atlas"):
 function createProjectEdge(edge: {
     source: string;
     target: string;
-    sourceHandle?: string | null;
-    targetHandle?: string | null;
+    sourceHandle: string;
+    targetHandle: string;
+    sourceSocketType: ProjectEdge["sourceSocketType"];
+    targetSocketType: ProjectEdge["targetSocketType"];
 }): ProjectEdge {
     const timestamp = new Date().toISOString();
 
@@ -87,8 +100,10 @@ function createProjectEdge(edge: {
         id: nanoid(),
         source: edge.source,
         target: edge.target,
-        sourceHandle: edge.sourceHandle ?? undefined,
-        targetHandle: edge.targetHandle ?? undefined,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        sourceSocketType: edge.sourceSocketType,
+        targetSocketType: edge.targetSocketType,
         createdAt: timestamp,
         updatedAt: timestamp,
     });
@@ -113,6 +128,7 @@ function updateProjectTimestamp(project: ProjectEditorState): ProjectEditorState
 
 export const useProjectEditorRuntimeStore = create<ProjectEditorRuntimeStore>((set) => ({
     dragPreview: null,
+    hoveredSocket: null,
 
     startDragPreview: (kind) => {
         set({
@@ -161,6 +177,33 @@ export const useProjectEditorRuntimeStore = create<ProjectEditorRuntimeStore>((s
             };
         });
     },
+
+    setHoveredSocket: (nodeId, handleId) => {
+        set((state) => {
+            if (state.hoveredSocket?.nodeId === nodeId && state.hoveredSocket?.handleId === handleId) {
+                return state;
+            }
+
+            return {
+                hoveredSocket: {
+                    nodeId,
+                    handleId,
+                },
+            };
+        });
+    },
+
+    clearHoveredSocket: () => {
+        set((state) => {
+            if (!state.hoveredSocket) {
+                return state;
+            }
+
+            return {
+                hoveredSocket: null,
+            };
+        });
+    },
 }));
 
 export const useProjectEditorStore = create<ProjectEditorStore>((set, get) => ({
@@ -175,6 +218,7 @@ export const useProjectEditorStore = create<ProjectEditorStore>((set, get) => ({
         }
 
         useProjectEditorRuntimeStore.getState().clearDragPreview();
+        useProjectEditorRuntimeStore.getState().clearHoveredSocket();
 
         set({
             project: createEmptyProject(projectId, name),
@@ -184,9 +228,10 @@ export const useProjectEditorStore = create<ProjectEditorStore>((set, get) => ({
 
     hydrateProject: (project) => {
         useProjectEditorRuntimeStore.getState().clearDragPreview();
+        useProjectEditorRuntimeStore.getState().clearHoveredSocket();
 
         set((state) => ({
-            project: projectEditorStateSchema.parse(project),
+            project: projectEditorStateSchema.parse(normalizeProjectState(projectEditorStateSchema.parse(project))),
             ui: {
                 ...state.ui,
                 selectedNodeId: null,
@@ -235,27 +280,27 @@ export const useProjectEditorStore = create<ProjectEditorStore>((set, get) => ({
     },
 
     addEdge: (edge) => {
-        const sourceExists = get().project.nodes.some((node) => node.id === edge.source);
-        const targetExists = get().project.nodes.some((node) => node.id === edge.target);
-
-        if (!sourceExists || !targetExists || edge.source === edge.target) {
-            return null;
-        }
-
-        const duplicateEdge = get().project.edges.find((item) => {
-            return (
-                item.source === edge.source &&
-                item.target === edge.target &&
-                item.sourceHandle === (edge.sourceHandle ?? undefined) &&
-                item.targetHandle === (edge.targetHandle ?? undefined)
-            );
+        const validation = canConnect({
+            nodes: get().project.nodes,
+            edges: get().project.edges,
+            sourceNodeId: edge.source,
+            targetNodeId: edge.target,
+            sourceHandleId: edge.sourceHandle,
+            targetHandleId: edge.targetHandle,
         });
 
-        if (duplicateEdge) {
-            return duplicateEdge.id;
+        if (!validation.allowed || !validation.sourceSocket || !validation.targetSocket) {
+            return validation.existingEdgeId ?? null;
         }
 
-        const nextEdge = createProjectEdge(edge);
+        const nextEdge = createProjectEdge({
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: createSocketHandleId(validation.sourceSocket),
+            targetHandle: createSocketHandleId(validation.targetSocket),
+            sourceSocketType: validation.sourceSocket.socketType,
+            targetSocketType: validation.targetSocket.socketType,
+        });
 
         set((state) => ({
             project: updateProjectTimestamp({
@@ -437,6 +482,7 @@ export const useProjectEditorStore = create<ProjectEditorStore>((set, get) => ({
 
     resetProject: (projectId, name = "Project Atlas") => {
         useProjectEditorRuntimeStore.getState().clearDragPreview();
+        useProjectEditorRuntimeStore.getState().clearHoveredSocket();
 
         set({
             project: createEmptyProject(projectId, name),
