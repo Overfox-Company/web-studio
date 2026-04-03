@@ -1,17 +1,17 @@
 "use client";
 
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 
-import { UiAppThemeRoot, UiCssBaseline } from "@/src/components/ui-kit";
-import { appTheme } from "@/src/lib/theme";
+import { projectEditorTheme } from "@/src/lib/theme/project-editor-theme";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
         <AppRouterCacheProvider>
-            <UiAppThemeRoot theme={appTheme}>
-                <UiCssBaseline />
+            <ThemeProvider theme={projectEditorTheme}>
+                <CssBaseline />
                 {children}
-            </UiAppThemeRoot>
+            </ThemeProvider>
         </AppRouterCacheProvider>
     );
 }

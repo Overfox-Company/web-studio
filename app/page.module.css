@@ -1,0 +1,529 @@
+.pageShell {
+    --landing-background: #0a0c12;
+    --landing-surface: rgba(18, 22, 29, 0.88);
+    --landing-surface-strong: rgba(24, 29, 38, 0.94);
+    --landing-border: rgba(255, 255, 255, 0.08);
+    --landing-foreground: #f5f7fb;
+    --landing-muted: rgba(220, 226, 238, 0.68);
+    --landing-accent: #0f83fd;
+    --landing-accent-strong: #0566ca;
+    --landing-shadow: 0 24px 80px rgba(2, 8, 23, 0.24);
+    --container-max: 1120px;
+    --radius-xl: 6px;
+    --radius-lg: 6px;
+    --radius-md: 6px;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(15, 131, 253, 0.12), transparent 30%),
+        radial-gradient(circle at 80% 14%, rgba(110, 168, 254, 0.08), transparent 24%),
+        linear-gradient(180deg, #0a0c12 0%, var(--landing-background) 52%, #0d1016 100%);
+    color: var(--landing-foreground);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.heroSection,
+.proofSection,
+.benefitsSection,
+.stepsSection,
+.finalSection {
+    width: min(calc(100% - 32px), var(--container-max));
+    margin: 0 auto;
+}
+
+.heroSection {
+    padding: 24px 0 64px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px 0;
+}
+
+.wordmark {
+    margin: 0;
+    font-size: 0.88rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(220, 226, 238, 0.72);
+}
+
+.wordmarkSubcopy {
+    margin: 6px 0 0;
+    font-size: 0.98rem;
+    color: var(--landing-muted);
+}
+
+.navLink,
+.secondaryCta,
+.primaryCta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    min-height: 48px;
+    padding: 0 22px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.navLink {
+    color: var(--landing-foreground);
+    border: 1px solid var(--landing-border);
+    background: rgba(18, 22, 29, 0.84);
+    box-shadow: 0 10px 30px rgba(2, 8, 23, 0.18);
+}
+
+.heroContent {
+    display: grid;
+    gap: 24px;
+    justify-items: start;
+    padding: clamp(72px, 16vw, 148px) 0 clamp(48px, 9vw, 80px);
+}
+
+.eyebrow,
+.sectionEyebrow {
+    margin: 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(191, 204, 220, 0.52);
+}
+
+.heroTitle {
+    max-width: 10ch;
+    margin: 0;
+    font-size: clamp(3rem, 7vw, 5.8rem);
+    line-height: 0.94;
+    letter-spacing: -0.08em;
+    text-wrap: balance;
+}
+
+.heroCopy,
+.sectionCopy,
+.finalCopy {
+    max-width: 650px;
+    margin: 0;
+    font-size: clamp(1.05rem, 1.5vw, 1.32rem);
+    line-height: 1.65;
+    color: var(--landing-muted);
+}
+
+.heroActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.primaryCta {
+    color: #f8fbff;
+    background: linear-gradient(180deg, var(--landing-accent), var(--landing-accent-strong));
+    box-shadow: 0 18px 36px rgba(15, 131, 253, 0.24);
+}
+
+.secondaryCta {
+    color: var(--landing-foreground);
+    background: rgba(18, 22, 29, 0.82);
+    border: 1px solid var(--landing-border);
+}
+
+.sectionIntro {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 32px;
+}
+
+.sectionTitle,
+.finalTitle {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(2.2rem, 4vw, 4rem);
+    line-height: 0.98;
+    letter-spacing: -0.07em;
+    text-wrap: balance;
+}
+
+.proofSection {
+    padding: 24px 0 96px;
+}
+
+.productFrame {
+    display: grid;
+    grid-template-columns: minmax(0, 180px) minmax(0, 1fr) minmax(0, 240px);
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--landing-border);
+    border-radius: var(--radius-xl);
+    background: rgba(15, 18, 24, 0.72);
+    box-shadow: var(--landing-shadow);
+    backdrop-filter: blur(18px);
+}
+
+.productRail,
+.productInspector,
+.canvasArea {
+    position: relative;
+    min-height: 380px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    overflow: hidden;
+}
+
+.productRail,
+.productInspector {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    padding: 18px;
+    background: var(--landing-surface);
+}
+
+.railLabel {
+    font-size: 0.76rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(191, 204, 220, 0.48);
+}
+
+.railItem,
+.inspectorCard {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--landing-border);
+    background: var(--landing-surface-strong);
+}
+
+.railItem {
+    padding: 14px 16px;
+    font-size: 0.98rem;
+    color: rgba(220, 226, 238, 0.78);
+}
+
+.canvasArea {
+    background:
+        radial-gradient(circle at 20% 20%, rgba(15, 131, 253, 0.2), transparent 24%),
+        linear-gradient(180deg, #0f1720 0%, #121c2a 100%);
+}
+
+.canvasArea::before,
+.canvasArea::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+.canvasBadge,
+.canvasNodePrimary,
+.canvasNodeSecondary,
+.canvasNodeAccent {
+    position: absolute;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    padding: 0 16px;
+    min-height: 46px;
+    font-size: 0.94rem;
+    letter-spacing: -0.02em;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.canvasBadge {
+    top: 22px;
+    left: 22px;
+    min-height: 34px;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.canvasNodePrimary {
+    top: 110px;
+    left: 16%;
+    color: #f5f7fb;
+    background: linear-gradient(180deg, #222b36, #171d26);
+}
+
+.canvasNodeSecondary {
+    top: 220px;
+    right: 16%;
+    color: #f5f8ff;
+    background: linear-gradient(180deg, #0f83fd, #0566ca);
+}
+
+.canvasNodeAccent {
+    bottom: 88px;
+    left: 36%;
+    color: #f7fbff;
+    background: linear-gradient(180deg, #1c2a39, #111923);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.canvasBeamHorizontal,
+.canvasBeamVertical {
+    position: absolute;
+    z-index: 0;
+    background: linear-gradient(90deg, transparent, rgba(128, 187, 255, 0.72), transparent);
+    opacity: 0.9;
+}
+
+.canvasBeamHorizontal {
+    top: 184px;
+    left: 31%;
+    width: 40%;
+    height: 2px;
+}
+
+.canvasBeamVertical {
+    top: 196px;
+    left: 52%;
+    width: 2px;
+    height: 96px;
+    background: linear-gradient(180deg, rgba(128, 187, 255, 0.72), transparent);
+}
+
+.inspectorCard {
+    display: grid;
+    gap: 8px;
+    padding: 18px;
+    color: rgba(220, 226, 238, 0.72);
+}
+
+.inspectorCard strong {
+    font-size: 1rem;
+    color: var(--landing-foreground);
+}
+
+.metricGrid,
+.benefitGrid,
+.stepGrid {
+    display: grid;
+    gap: 18px;
+}
+
+.metricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 22px;
+}
+
+.metricCard,
+.benefitCard,
+.stepCard {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--landing-border);
+    background: var(--landing-surface);
+    box-shadow: 0 14px 40px rgba(15, 23, 32, 0.08);
+}
+
+.metricCard {
+    padding: 24px;
+}
+
+.metricValue {
+    margin: 0 0 10px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.metricLabel,
+.benefitCard p,
+.stepCard p {
+    margin: 0;
+    color: var(--landing-muted);
+    line-height: 1.7;
+}
+
+.benefitsSection,
+.stepsSection {
+    padding: 0 0 96px;
+}
+
+.benefitGrid,
+.stepGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.benefitCard,
+.stepCard {
+    padding: 28px;
+}
+
+.benefitCard h3,
+.stepCard h3 {
+    margin: 0 0 12px;
+    font-size: 1.36rem;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+.stepIndex {
+    margin-bottom: 18px;
+    font-size: 0.84rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(191, 204, 220, 0.5);
+}
+
+.finalSection {
+    display: grid;
+    gap: 18px;
+    justify-items: start;
+    padding: 0 0 112px;
+}
+
+.finalTitle {
+    max-width: 14ch;
+}
+
+.navLink:hover,
+.secondaryCta:hover,
+.primaryCta:hover {
+    transform: translateY(-1px);
+}
+
+.primaryCta:hover {
+    box-shadow: 0 22px 40px rgba(15, 131, 253, 0.28);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+    .productFrame,
+    .metricCard,
+    .benefitCard,
+    .stepCard {
+        animation: rise-in 560ms ease both;
+    }
+
+    .canvasNodePrimary,
+    .canvasNodeSecondary,
+    .canvasNodeAccent {
+        animation: float-node 8s ease-in-out infinite;
+    }
+
+    .canvasNodeSecondary {
+        animation-delay: 200ms;
+    }
+
+    .canvasNodeAccent {
+        animation-delay: 380ms;
+    }
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float-node {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@media (max-width: 1024px) {
+    .productFrame {
+        grid-template-columns: 1fr;
+    }
+
+    .productRail,
+    .productInspector,
+    .canvasArea {
+        min-height: auto;
+    }
+
+    .productRail,
+    .productInspector {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .railLabel {
+        grid-column: 1 / -1;
+    }
+
+    .canvasArea {
+        min-height: 420px;
+    }
+
+    .metricGrid,
+    .benefitGrid,
+    .stepGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .heroSection {
+        padding-top: 12px;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .heroContent {
+        padding-top: 56px;
+    }
+
+    .heroTitle,
+    .sectionTitle,
+    .finalTitle {
+        max-width: 100%;
+    }
+
+    .productFrame {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .productRail,
+    .productInspector {
+        grid-template-columns: 1fr;
+    }
+
+    .canvasArea {
+        min-height: 340px;
+    }
+
+    .canvasNodePrimary {
+        left: 10%;
+    }
+
+    .canvasNodeSecondary {
+        right: 10%;
+    }
+
+    .canvasNodeAccent {
+        left: 24%;
+        bottom: 54px;
+    }
+
+    .pageShell {
+        padding-bottom: 32px;
+    }
+}

@@ -1,5 +1,5 @@
-import { AppBuilderRoot } from "@/src/components/workspace/app-builder-root";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return <AppBuilderRoot />;
+export default function Page() {
+  redirect("/projects/demo/editor");
 }
