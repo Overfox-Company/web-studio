@@ -1,5 +1,6 @@
 import { projectEditorStateSchema } from "@/src/features/project-editor/schema/project.schema";
 import type { ProjectEditorState } from "@/src/features/project-editor/types/editor.types";
+import { normalizeProjectState } from "@/src/features/project-editor/utils/normalize-project-state";
 
 export interface EditorPersistenceAdapter {
     load(projectId: string): Promise<ProjectEditorState | null> | ProjectEditorState | null;
@@ -25,7 +26,7 @@ export class LocalStorageEditorPersistenceAdapter implements EditorPersistenceAd
         }
 
         try {
-            return projectEditorStateSchema.parse(JSON.parse(raw));
+            return projectEditorStateSchema.parse(normalizeProjectState(projectEditorStateSchema.parse(JSON.parse(raw))));
         } catch {
             window.localStorage.removeItem(getStorageKey(projectId));
             return null;
@@ -37,7 +38,7 @@ export class LocalStorageEditorPersistenceAdapter implements EditorPersistenceAd
             return;
         }
 
-        const parsed = projectEditorStateSchema.parse(data);
+        const parsed = projectEditorStateSchema.parse(normalizeProjectState(data));
         window.localStorage.setItem(getStorageKey(projectId), JSON.stringify(parsed));
     }
 }

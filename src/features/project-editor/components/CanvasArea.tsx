@@ -5,12 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
     Background,
+    ConnectionMode,
     Controls,
     ReactFlow,
     useEdgesState,
     useNodesState,
     type Connection,
-    MarkerType,
     useReactFlow,
     type Node,
     type XYPosition,
@@ -26,11 +26,12 @@ import { ViewNode } from "@/src/features/project-editor/nodes/view/ViewNode";
 import { useProjectEditorRuntimeStore, useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
 import type {
     ProjectEditorDragPreview,
-    ProjectEdge,
     ProjectFlowEdge,
     ProjectFlowNode,
     ProjectNode,
 } from "@/src/features/project-editor/types/editor.types";
+import { canConnectFlow } from "@/src/features/project-editor/utils/can-connect";
+import { buildProjectFlowEdges } from "@/src/features/project-editor/utils/flow-edges";
 
 const nodeTypes = {
     view: ViewNode,
@@ -77,34 +78,6 @@ function createFlowNode(
     };
 }
 
-function createFlowEdge(edge: {
-    id: string;
-    source: string;
-    target: string;
-    sourceHandle?: string;
-    targetHandle?: string;
-}): ProjectFlowEdge {
-    return {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        type: "smoothstep",
-        animated: false,
-        markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 18,
-            height: 18,
-            color: "#94a3b8",
-        },
-        style: {
-            stroke: "#94a3b8",
-            strokeWidth: 1.6,
-        },
-    };
-}
-
 function buildFlowNodes(
     nodes: ProjectNode[],
     selectedNodeId: string | null,
@@ -117,10 +90,6 @@ function buildFlowNodes(
     }
 
     return nextNodes;
-}
-
-function buildFlowEdges(edges: ProjectEdge[]): ProjectFlowEdge[] {
-    return edges.map((edge) => createFlowEdge(edge));
 }
 
 export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
@@ -146,7 +115,7 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
         buildFlowNodes(initialProject.nodes, initialSelectedNodeId, initialDragPreview),
     );
     const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState<ProjectFlowEdge>(
-        buildFlowEdges(initialProject.edges),
+        buildProjectFlowEdges(initialProject.edges),
     );
 
     const syncNodesFromStore = useCallback((
@@ -166,7 +135,7 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
             return;
         }
 
-        setFlowEdges(buildFlowEdges(nextProject.edges));
+        setFlowEdges(buildProjectFlowEdges(nextProject.edges));
     }, [setFlowEdges]);
 
     useEffect(() => {
@@ -241,7 +210,9 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
     }
 
     function handleConnect(connection: Connection) {
-        if (!connection.source || !connection.target) {
+        const validation = canConnectFlow(connection, projectRef.current.nodes, projectRef.current.edges);
+
+        if (!validation.allowed || !connection.source || !connection.target) {
             return;
         }
 
@@ -251,6 +222,19 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
             sourceHandle: connection.sourceHandle,
             targetHandle: connection.targetHandle,
         });
+    }
+
+    function validateFlowConnection(connection: Connection | ProjectFlowEdge) {
+        return canConnectFlow(
+            {
+                source: connection.source,
+                target: connection.target,
+                sourceHandle: connection.sourceHandle ?? null,
+                targetHandle: connection.targetHandle ?? null,
+            },
+            projectRef.current.nodes,
+            projectRef.current.edges,
+        ).allowed;
     }
 
     return (
@@ -279,6 +263,7 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={handleConnect}
+                    isValidConnection={validateFlowConnection}
                     onNodeDragStart={handleNodeDragStart}
                     onNodeDragStop={handleNodeDragStop}
                     onNodeClick={(_, node) => selectNode(node.id)}
@@ -287,24 +272,20 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
                     fitViewOptions={{ padding: 0.2 }}
                     minZoom={0.45}
                     maxZoom={1.8}
+                    connectionMode={ConnectionMode.Strict}
                     nodesConnectable={!isPaletteDragActive}
                     nodesDraggable={!isPaletteDragActive}
                     elementsSelectable={!isPaletteDragActive}
                     selectionOnDrag={false}
                     deleteKeyCode={null}
                     panOnDrag={isPaletteDragActive ? false : [0, 1]}
+                    connectionLineStyle={{
+                        stroke: "rgba(71, 85, 105, 0.76)",
+                        strokeWidth: 1.8,
+                    }}
                     defaultEdgeOptions={{
                         type: "smoothstep",
-                        markerEnd: {
-                            type: MarkerType.ArrowClosed,
-                            width: 18,
-                            height: 18,
-                            color: "#94a3b8",
-                        },
-                        style: {
-                            stroke: "#94a3b8",
-                            strokeWidth: 1.6,
-                        },
+                        className: "project-flow-edge",
                     }}
                     zoomOnDoubleClick={false}
                     proOptions={{ hideAttribution: true }}

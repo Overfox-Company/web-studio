@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 
+import { createDefaultDesignDocument } from "@/src/features/design-editor/utils/create-design-document";
 import { projectNodeSchema } from "@/src/features/project-editor/schema/node.schema";
 import type { ProjectNode, ProjectNodeKind } from "@/src/features/project-editor/types/editor.types";
 
@@ -20,12 +21,18 @@ function createBaseNode(kind: ProjectNodeKind, name: string, description: string
 export function createNodeDefaults(kind: ProjectNodeKind, position: { x: number; y: number }): ProjectNode {
     switch (kind) {
         case "view":
+            const baseNode = createBaseNode(kind, "Dashboard View", "Main surface for a user-facing route.", position);
+
             return projectNodeSchema.parse({
-                ...createBaseNode(kind, "Dashboard View", "Main surface for a user-facing route.", position),
+                ...baseNode,
                 data: {
                     route: "/dashboard",
                     renderMode: "SSR",
                     layout: "main-shell",
+                    designDocument: createDefaultDesignDocument({
+                        viewNodeId: baseNode.id,
+                        viewName: baseNode.name,
+                    }),
                 },
             });
         case "api":

@@ -114,6 +114,9 @@ function TypeConfigFields({ node }: { node: ProjectNode }) {
     );
 }
 
+
+
+
 export function InspectorPanel() {
     const selectedNode = useProjectEditorStore((state) => state.project.nodes.find((node) => node.id === state.ui.selectedNodeId) ?? null);
     const updateNode = useProjectEditorStore((state) => state.updateNode);

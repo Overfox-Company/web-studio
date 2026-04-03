@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { designDocumentSchema } from "@/src/features/design-editor/schema/design.schema";
 import {
     ACTION_TRIGGERS,
     API_METHODS,
@@ -7,6 +8,7 @@ import {
     PROJECT_NODE_KINDS,
     VIEW_RENDER_MODES,
 } from "@/src/features/project-editor/types/editor.types";
+import { SOCKET_TYPES } from "@/src/features/project-editor/utils/socket-types";
 
 export const nodePositionSchema = z.object({
     x: z.number(),
@@ -17,6 +19,7 @@ export const viewNodeDataSchema = z.object({
     route: z.string().startsWith("/"),
     renderMode: z.enum(VIEW_RENDER_MODES),
     layout: z.string().min(1),
+    designDocument: designDocumentSchema.optional(),
 });
 
 export const apiNodeDataSchema = z.object({
@@ -84,6 +87,8 @@ export const projectEdgeSchema = z.object({
     target: z.string().min(1),
     sourceHandle: z.string().min(1).optional(),
     targetHandle: z.string().min(1).optional(),
+    sourceSocketType: z.enum(SOCKET_TYPES).optional(),
+    targetSocketType: z.enum(SOCKET_TYPES).optional(),
     createdAt: z.string().min(1),
     updatedAt: z.string().min(1),
 });
