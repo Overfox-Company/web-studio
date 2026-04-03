@@ -44,7 +44,7 @@ const DRAG_PREVIEW_POINTER_OFFSET = {
 
 const LEFT_PANEL_WIDTH = {
     xs: "min(88vw, 304px)",
-    lg: "296px",
+    lg: "250px",
 } as const;
 
 const RIGHT_PANEL_WIDTH = {
@@ -376,7 +376,7 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
                                     top: { xs: 28, lg: 36 },
                                     left: {
                                         xs: isPaletteOpen ? "calc(16px + min(88vw, 304px) - 18px)" : "16px",
-                                        lg: isPaletteOpen ? "calc(24px + 296px - 58px)" : "24px",
+                                        lg: isPaletteOpen ? "calc(24px + 296px - 106px)" : "24px",
                                     },
                                     minWidth: 40,
                                     width: 40,

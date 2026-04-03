@@ -12,7 +12,7 @@ interface ProjectIconProps {
 export function ProjectIcon({
     icon,
     size = 20,
-    strokeWidth = 1.7,
+    strokeWidth = 0,
     color = "currentColor",
 }: ProjectIconProps) {
     return <HugeiconsIcon icon={icon} size={size} strokeWidth={strokeWidth} color={color} />;

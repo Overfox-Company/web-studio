@@ -38,17 +38,15 @@ export function EditorTopbar({ projectId, onBuild, onFitView }: EditorTopbarProp
             justifyContent="space-between"
             spacing={2}
             sx={{
-                px: { xs: 2, lg: 3 },
-                py: 2,
+                px: 2,
+                py: 1,
                 borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
                 background: "rgba(255,255,255,0.7)",
                 backdropFilter: "blur(18px)",
             }}
         >
             <Stack spacing={1} minWidth={0}>
-                <Typography sx={{ fontSize: "0.76rem", color: "#98a2b3", letterSpacing: "0.18em", textTransform: "uppercase" }}>
-                    Projects / {projectId} / Editor
-                </Typography>
+
                 <TextField
                     value={projectName}
                     onChange={(event) => setProjectName(event.target.value)}
