@@ -19,7 +19,7 @@ import {
     PanelLeftOpenIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
-} from "@hugeicons-pro/core-stroke-standard";
+} from "@hugeicons-pro/core-solid-standard";
 import { motion } from "framer-motion";
 import { Box, Stack, Typography } from "@mui/material";
 import { ReactFlowProvider } from "@xyflow/react";

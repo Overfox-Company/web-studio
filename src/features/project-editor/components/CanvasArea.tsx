@@ -290,8 +290,9 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
                     nodesConnectable={!isPaletteDragActive}
                     nodesDraggable={!isPaletteDragActive}
                     elementsSelectable={!isPaletteDragActive}
+                    selectionOnDrag={false}
                     deleteKeyCode={null}
-                    panOnDrag={isPaletteDragActive ? false : [1, 2]}
+                    panOnDrag={isPaletteDragActive ? false : [0, 1]}
                     defaultEdgeOptions={{
                         type: "smoothstep",
                         markerEnd: {
