@@ -1,5 +1,7 @@
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 
+import type { SocketType } from "@/src/features/project-editor/utils/socket-types";
+
 export const PROJECT_NODE_KINDS = ["view", "api", "database", "action"] as const;
 
 export type ProjectNodeKind = (typeof PROJECT_NODE_KINDS)[number];
@@ -63,6 +65,8 @@ export interface ProjectEdge {
     target: string;
     sourceHandle?: string;
     targetHandle?: string;
+    sourceSocketType?: SocketType;
+    targetSocketType?: SocketType;
     createdAt: string;
     updatedAt: string;
 }
@@ -72,8 +76,13 @@ export interface ProjectFlowNodeData extends Record<string, unknown> {
     isPreview?: boolean;
 }
 
+export interface ProjectFlowEdgeData extends Record<string, unknown> {
+    sourceSocketType?: SocketType;
+    targetSocketType?: SocketType;
+}
+
 export type ProjectFlowNode = Node<ProjectFlowNodeData, ProjectNodeKind>;
-export type ProjectFlowEdge = Edge;
+export type ProjectFlowEdge = Edge<ProjectFlowEdgeData>;
 
 export interface ProjectEditorState {
     projectId: string;
