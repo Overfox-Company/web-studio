@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { createDefaultDesignDocument } from "@/src/features/design-editor/utils/create-design-document";
+import {
+    createDesignPreviewChannel,
+    createDesignPreviewSnapshotMessage,
+} from "@/src/features/design-editor/preview/preview-channel";
+import { serializeDesignDocumentForPreview } from "@/src/features/design-editor/preview/serialize-design-document-for-preview";
 import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
-import type { DesignDocumentSnapshot } from "@/src/features/design-editor/types/design.types";
 import {
-    LocalStorageEditorPersistenceAdapter,
+    defaultDesignPersistenceAdapter,
+    persistDesignDocument,
+    persistPageViewportMode,
+    resolveDesignDocumentSnapshot,
+} from "@/src/features/design-editor/utils/design-document-persistence";
+import {
     type EditorPersistenceAdapter,
 } from "@/src/features/project-editor/store/editor.persistence";
-import { useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
-import type { ProjectEditorState, ViewNode } from "@/src/features/project-editor/types/editor.types";
-
-const defaultAdapter = new LocalStorageEditorPersistenceAdapter();
+import type { PageViewportMode } from "@/src/features/project-editor/types/editor.types";
 
 type DesignEditorLoadState = "loading" | "ready" | "not-found" | "error";
 type DesignEditorSaveState = "saved" | "saving" | "error";
@@ -24,83 +29,10 @@ interface UseDesignEditorPersistenceOptions {
     adapter?: EditorPersistenceAdapter;
 }
 
-function loadProjectSnapshot(projectId: string, adapter: EditorPersistenceAdapter): ProjectEditorState | null {
-    const currentStore = useProjectEditorStore.getState();
-    const hasLiveProject = currentStore.project.projectId === projectId && (currentStore.ui.hasHydrated || currentStore.project.nodes.length > 0);
-
-    if (hasLiveProject) {
-        return currentStore.project;
-    }
-
-    const loaded = adapter.load(projectId);
-
-    if (loaded instanceof Promise) {
-        return null;
-    }
-
-    return loaded;
-}
-
-function findViewNode(project: ProjectEditorState, viewId: string): ViewNode | null {
-    const match = project.nodes.find((node) => node.id === viewId);
-
-    if (!match || match.kind !== "view") {
-        return null;
-    }
-
-    return match;
-}
-
-function persistDesignDocument(
-    projectId: string,
-    viewId: string,
-    document: DesignDocumentSnapshot,
-    adapter: EditorPersistenceAdapter,
-) {
-    const sourceProject = loadProjectSnapshot(projectId, adapter);
-
-    if (!sourceProject) {
-        throw new Error("Unable to resolve project state for design persistence.");
-    }
-
-    const timestamp = new Date().toISOString();
-    const nextProject: ProjectEditorState = {
-        ...sourceProject,
-        updatedAt: timestamp,
-        nodes: sourceProject.nodes.map((node) => {
-            if (node.id !== viewId || node.kind !== "view") {
-                return node;
-            }
-
-            return {
-                ...node,
-                updatedAt: timestamp,
-                data: {
-                    ...node.data,
-                    designDocument: {
-                        ...document,
-                        updatedAt: timestamp,
-                    },
-                },
-            };
-        }),
-    };
-
-    const saveResult = adapter.save(projectId, nextProject);
-
-    if (saveResult instanceof Promise) {
-        return saveResult.then(() => {
-            useProjectEditorStore.getState().hydrateProject(nextProject);
-        });
-    }
-
-    useProjectEditorStore.getState().hydrateProject(nextProject);
-}
-
 export function useDesignEditorPersistence({
     projectId,
     viewId,
-    adapter = defaultAdapter,
+    adapter = defaultDesignPersistenceAdapter,
 }: UseDesignEditorPersistenceOptions) {
     const document = useDesignDocumentStore((state) => state.document);
     const hydrateDocument = useDesignDocumentStore((state) => state.hydrateDocument);
@@ -108,24 +40,17 @@ export function useDesignEditorPersistence({
     const resetInteraction = useDesignInteractionStore((state) => state.resetForDocument);
 
     const [saveState, setSaveState] = useState<DesignEditorSaveState>("saved");
+    const [viewportModeOverride, setViewportModeOverride] = useState<PageViewportMode | null>(null);
 
     const lastSavedRef = useRef<string | null>(null);
+    const lastBroadcastRef = useRef<string | null>(null);
+    const previewChannelRef = useRef<BroadcastChannel | null>(null);
 
     const resolvedSnapshot = useMemo(() => {
         try {
-            const project = loadProjectSnapshot(projectId, adapter);
+            const snapshot = resolveDesignDocumentSnapshot(projectId, viewId, adapter);
 
-            if (!project) {
-                return {
-                    loadState: "not-found" as DesignEditorLoadState,
-                    viewNode: null,
-                    document: null,
-                };
-            }
-
-            const nextViewNode = findViewNode(project, viewId);
-
-            if (!nextViewNode) {
+            if (!snapshot) {
                 return {
                     loadState: "not-found" as DesignEditorLoadState,
                     viewNode: null,
@@ -135,11 +60,8 @@ export function useDesignEditorPersistence({
 
             return {
                 loadState: "ready" as DesignEditorLoadState,
-                viewNode: nextViewNode,
-                document: nextViewNode.data.designDocument ?? createDefaultDesignDocument({
-                    viewNodeId: nextViewNode.id,
-                    viewName: nextViewNode.name,
-                }),
+                viewNode: snapshot.viewNode,
+                document: snapshot.document,
             };
         } catch {
             return {
@@ -149,6 +71,21 @@ export function useDesignEditorPersistence({
             };
         }
     }, [adapter, projectId, viewId]);
+
+    const viewportMode = viewportModeOverride ?? resolvedSnapshot.viewNode?.data.viewportMode ?? "desktop";
+
+    useEffect(() => {
+        const channel = createDesignPreviewChannel(viewId);
+        previewChannelRef.current = channel;
+
+        return () => {
+            if (previewChannelRef.current === channel) {
+                previewChannelRef.current = null;
+            }
+
+            channel?.close();
+        };
+    }, [viewId]);
 
     useEffect(() => {
         clearDocument();
@@ -165,6 +102,7 @@ export function useDesignEditorPersistence({
 
         hydrateDocument(resolvedSnapshot.document);
         lastSavedRef.current = JSON.stringify(resolvedSnapshot.document);
+        lastBroadcastRef.current = JSON.stringify(serializeDesignDocumentForPreview(resolvedSnapshot.document));
     }, [clearDocument, hydrateDocument, resetInteraction, resolvedSnapshot]);
 
     useEffect(() => {
@@ -173,6 +111,13 @@ export function useDesignEditorPersistence({
         }
 
         const serialized = JSON.stringify(document);
+        const previewSnapshot = serializeDesignDocumentForPreview(document);
+        const previewSerialized = JSON.stringify(previewSnapshot);
+
+        if (previewSerialized !== lastBroadcastRef.current) {
+            previewChannelRef.current?.postMessage(createDesignPreviewSnapshotMessage(previewSnapshot));
+            lastBroadcastRef.current = previewSerialized;
+        }
 
         if (serialized === lastSavedRef.current) {
             return;
@@ -209,9 +154,29 @@ export function useDesignEditorPersistence({
         };
     }, [adapter, document, projectId, resolvedSnapshot.loadState, resolvedSnapshot.viewNode, viewId]);
 
+    const updateViewportMode = useCallback((nextViewportMode: PageViewportMode) => {
+        if (resolvedSnapshot.loadState !== "ready" || !resolvedSnapshot.viewNode || nextViewportMode === viewportMode) {
+            return;
+        }
+
+        setViewportModeOverride(nextViewportMode);
+        setSaveState("saving");
+
+        void Promise.resolve(persistPageViewportMode(projectId, viewId, nextViewportMode, adapter))
+            .then(() => {
+                setSaveState("saved");
+            })
+            .catch(() => {
+                setViewportModeOverride(null);
+                setSaveState("error");
+            });
+    }, [adapter, projectId, resolvedSnapshot.loadState, resolvedSnapshot.viewNode, viewId, viewportMode]);
+
     return {
         loadState: resolvedSnapshot.loadState,
         saveState,
         viewNode: resolvedSnapshot.viewNode,
+        viewportMode,
+        setViewportMode: updateViewportMode,
     };
 }

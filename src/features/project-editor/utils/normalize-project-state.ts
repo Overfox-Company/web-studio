@@ -3,6 +3,8 @@ import { projectEdgeSchema } from "@/src/features/project-editor/schema/node.sch
 import type { ProjectEditorState, ProjectEdge } from "@/src/features/project-editor/types/editor.types";
 import { canConnect } from "@/src/features/project-editor/utils/can-connect";
 import { getPreferredSocketsForConnection } from "@/src/features/project-editor/utils/node-sockets";
+import { normalizePageNodes } from "@/src/features/project-editor/utils/page-nodes";
+import { resolveProjectNodeKind } from "@/src/features/project-editor/utils/page-nodes";
 import { createSocketHandleId } from "@/src/features/project-editor/utils/socket-types";
 
 function normalizeEdge(edge: ProjectEdge, project: ProjectEditorState, acceptedEdges: ProjectEdge[]) {
@@ -32,7 +34,10 @@ function normalizeEdge(edge: ProjectEdge, project: ProjectEditorState, acceptedE
         return null;
     }
 
-    const fallbackSockets = getPreferredSocketsForConnection(sourceNode.kind, targetNode.kind);
+    const fallbackSockets = getPreferredSocketsForConnection(
+        resolveProjectNodeKind(sourceNode.kind),
+        resolveProjectNodeKind(targetNode.kind),
+    );
 
     if (!fallbackSockets) {
         return null;
@@ -61,8 +66,8 @@ function normalizeEdge(edge: ProjectEdge, project: ProjectEditorState, acceptedE
 }
 
 export function normalizeProjectState(project: ProjectEditorState): ProjectEditorState {
-    const normalizedNodes = project.nodes.map((node) => {
-        if (node.kind !== "view" || node.data.designDocument) {
+    const normalizedNodes = normalizePageNodes(project.nodes).map((node) => {
+        if (node.kind !== "page" || node.data.designDocument) {
             return node;
         }
 
@@ -95,7 +100,7 @@ export function normalizeProjectState(project: ProjectEditorState): ProjectEdito
 
     return {
         ...normalizedProject,
-        version: Math.max(normalizedProject.version, 2),
+        version: Math.max(normalizedProject.version, 3),
         edges: normalizedEdges,
     };
 }

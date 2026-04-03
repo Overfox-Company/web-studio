@@ -1,12 +1,11 @@
 import { MarkerType } from "@xyflow/react";
 
+import { projectEditorDefaults } from "@/src/customization/project-editor";
 import type { ProjectEdge, ProjectFlowEdge } from "@/src/features/project-editor/types/editor.types";
 import { getSocketColor } from "@/src/features/project-editor/utils/socket-colors";
 
-const FALLBACK_EDGE_COLOR = "#94a3b8";
-
 export function createProjectFlowEdge(edge: ProjectEdge): ProjectFlowEdge {
-    const strokeColor = edge.sourceSocketType ? getSocketColor(edge.sourceSocketType) : FALLBACK_EDGE_COLOR;
+    const strokeColor = edge.sourceSocketType ? getSocketColor(edge.sourceSocketType) : projectEditorDefaults.fallbackEdgeColor;
 
     return {
         id: edge.id,

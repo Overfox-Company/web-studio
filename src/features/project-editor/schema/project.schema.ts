@@ -4,6 +4,7 @@ import {
     actionNodeSchema,
     apiNodeSchema,
     databaseNodeSchema,
+    pageNodeSchema,
     projectEdgeArraySchema,
     projectEdgeSchema,
     projectNodeArraySchema,
@@ -40,6 +41,7 @@ export const exportedProjectSpecSchema = z.object({
         databases: z.array(databaseNodeSchema),
         apis: z.array(apiNodeSchema),
         actions: z.array(actionNodeSchema),
-        views: z.array(viewNodeSchema),
+        pages: z.array(pageNodeSchema),
+        legacyViews: z.array(viewNodeSchema),
     }),
 });

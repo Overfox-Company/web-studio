@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
+import { designEditorStyles, getDesignResizeHandleStyle } from "@/src/customization/design-editor";
+import { DesignDocumentRenderer } from "@/src/features/design-editor/components/DesignDocumentRenderer";
+import { pasteFromClipboard } from "@/src/features/design-editor/import/paste-from-clipboard";
 import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
+import { createRootViewportFrameOverride } from "@/src/features/design-editor/utils/page-viewport";
 import type { DesignNode } from "@/src/features/design-editor/types/design.types";
 import {
     DESIGN_RESIZE_HANDLES,
@@ -27,6 +31,7 @@ import {
     isAutoLayoutFrame,
     isFrameNode,
 } from "@/src/features/design-editor/utils/design-tree";
+import type { PageViewportMode } from "@/src/features/project-editor/types/editor.types";
 
 const MIN_CREATION_SIZE = 24;
 const ZOOM_LIMITS = {
@@ -105,30 +110,28 @@ function getPreviewFrame(node: DesignNode, activeSession: ReturnType<typeof useD
     return getNodeLocalFrame(document, node.id);
 }
 
-function mapAutoLayoutJustify(justifyContent: DesignNode extends never ? never : "start" | "center" | "end" | "space-between") {
-    switch (justifyContent) {
-        case "center":
-            return "center";
-        case "end":
-            return "flex-end";
-        case "space-between":
-            return "space-between";
-        default:
-            return "flex-start";
-    }
+function isEditableTarget(target: EventTarget | null) {
+    return target instanceof HTMLElement && target.matches("input, textarea, [contenteditable='true']");
 }
 
-function mapAutoLayoutAlign(alignItems: DesignNode extends never ? never : "start" | "center" | "end" | "stretch") {
-    switch (alignItems) {
-        case "center":
-            return "center";
-        case "end":
-            return "flex-end";
-        case "stretch":
-            return "stretch";
-        default:
-            return "flex-start";
+function resolvePasteTargetParentId(document: NonNullable<ReturnType<typeof useDesignDocumentStore.getState>["document"]>, selectedNodeIds: string[]) {
+    if (selectedNodeIds.length === 1) {
+        const selectedNode = document.nodes[selectedNodeIds[0]];
+
+        if (selectedNode && isContainerNode(selectedNode)) {
+            return selectedNode.id;
+        }
+
+        if (selectedNode?.parentId) {
+            const parentNode = document.nodes[selectedNode.parentId];
+
+            if (parentNode && isContainerNode(parentNode)) {
+                return parentNode.id;
+            }
+        }
     }
+
+    return document.rootNodeId;
 }
 
 function getToolNodeType(tool: DesignTool) {
@@ -143,35 +146,20 @@ function getToolNodeType(tool: DesignTool) {
     }
 }
 
-function getResizeHandleStyle(handle: DesignResizeHandle) {
-    const base = { transform: "translate(-50%, -50%)" };
-
-    switch (handle) {
-        case "nw":
-            return { ...base, left: 0, top: 0, cursor: "nwse-resize" };
-        case "n":
-            return { ...base, left: "50%", top: 0, cursor: "ns-resize" };
-        case "ne":
-            return { ...base, left: "100%", top: 0, cursor: "nesw-resize" };
-        case "e":
-            return { ...base, left: "100%", top: "50%", cursor: "ew-resize" };
-        case "se":
-            return { ...base, left: "100%", top: "100%", cursor: "nwse-resize" };
-        case "s":
-            return { ...base, left: "50%", top: "100%", cursor: "ns-resize" };
-        case "sw":
-            return { ...base, left: 0, top: "100%", cursor: "nesw-resize" };
-        case "w":
-            return { ...base, left: 0, top: "50%", cursor: "ew-resize" };
-    }
+interface DesignCanvasProps {
+    viewportMode: PageViewportMode;
+    canvasMode?: "page" | "workspace";
 }
 
-export function DesignCanvas() {
+export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvasProps) {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const lastCenteredViewportModeRef = useRef<string | null>(null);
+    const viewportRef = useRef(useDesignInteractionStore.getState().viewport);
 
     const document = useDesignDocumentStore((state) => state.document);
     const patchNode = useDesignDocumentStore((state) => state.patchNode);
     const insertNode = useDesignDocumentStore((state) => state.insertNode);
+    const insertSubtree = useDesignDocumentStore((state) => state.insertSubtree);
     const commitNodeFrame = useDesignDocumentStore((state) => state.commitNodeFrame);
     const groupNodes = useDesignDocumentStore((state) => state.groupNodes);
     const reparentNodes = useDesignDocumentStore((state) => state.reparentNodes);
@@ -202,6 +190,7 @@ export function DesignCanvas() {
     const clearDragFeedback = useDesignInteractionStore((state) => state.clearDragFeedback);
 
     const [draftText, setDraftText] = useState("");
+    const [pasteFeedback, setPasteFeedback] = useState<{ tone: "info" | "error"; message: string } | null>(null);
 
     const effectiveTool = isSpacePressed ? "hand" : activeTool;
 
@@ -213,11 +202,42 @@ export function DesignCanvas() {
         return document.nodes[document.rootNodeId] ?? null;
     }, [document]);
 
-    useEffect(() => {
-        function isEditableTarget(target: EventTarget | null) {
-            return target instanceof HTMLElement && target.matches("input, textarea, [contenteditable='true']");
+    const rootFrameOverride = useMemo(() => {
+        if (!rootNode || canvasMode === "workspace") {
+            return null;
         }
 
+        return createRootViewportFrameOverride(getNodeFrame(rootNode), viewportMode);
+    }, [canvasMode, rootNode, viewportMode]);
+
+    const effectiveRootWidth = rootFrameOverride?.width ?? rootNode?.width ?? 0;
+
+    useEffect(() => {
+        viewportRef.current = viewport;
+    }, [viewport]);
+
+    useEffect(() => {
+        if (!containerRef.current || !rootFrameOverride) {
+            return;
+        }
+
+        const centerSignature = `${rootNode?.id ?? "root"}:${viewportMode}:${rootFrameOverride.width}`;
+
+        if (lastCenteredViewportModeRef.current === centerSignature) {
+            return;
+        }
+
+        const nextX = (containerRef.current.clientWidth - rootFrameOverride.width * viewport.zoom) / 2;
+        const currentViewport = viewportRef.current;
+
+        setViewport({
+            ...currentViewport,
+            x: nextX,
+        });
+        lastCenteredViewportModeRef.current = centerSignature;
+    }, [rootFrameOverride, rootNode?.id, setViewport, viewport.zoom, viewportMode]);
+
+    useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
             if (isEditableTarget(event.target)) {
                 return;
@@ -288,6 +308,20 @@ export function DesignCanvas() {
             window.removeEventListener("keyup", handleKeyUp);
         };
     }, [groupNodes, selectedNodeIds, setActiveTool, setInlineTextNodeId, setSelectedNodeIds, setSpacePressed]);
+
+    useEffect(() => {
+        if (!pasteFeedback) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setPasteFeedback(null);
+        }, 3200);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [pasteFeedback]);
 
     const clientToDocumentPoint = useCallback(
         (clientX: number, clientY: number) => {
@@ -368,6 +402,69 @@ export function DesignCanvas() {
     const clientPointToDocumentPoint = useCallback((clientX: number, clientY: number) => {
         return clientToDocumentPoint(clientX, clientY);
     }, [clientToDocumentPoint]);
+
+    useEffect(() => {
+        if (!document) {
+            return;
+        }
+
+        const currentDocument = document;
+
+        async function handlePaste(event: ClipboardEvent) {
+            if (activeSession || inlineTextNodeId || isEditableTarget(event.target)) {
+                return;
+            }
+
+            const rect = containerRef.current?.getBoundingClientRect();
+
+            if (!rect) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const targetParentId = resolvePasteTargetParentId(currentDocument, selectedNodeIds);
+            const anchorPoint = {
+                x: (-viewport.x + rect.width / 2) / viewport.zoom,
+                y: (-viewport.y + rect.height / 2) / viewport.zoom,
+            };
+            const result = await pasteFromClipboard({
+                event,
+                document: currentDocument,
+                targetParentId,
+                anchorPoint,
+                insertSubtree,
+            });
+
+            if (result.status === "success") {
+                if (result.rootNodeIds.length > 0) {
+                    const primarySelection = result.rootNodeIds[result.rootNodeIds.length - 1] ?? null;
+                    setSelectedNodeIds(result.rootNodeIds, primarySelection);
+                    setInlineTextNodeId(null);
+                }
+
+                if (result.warnings.length > 0) {
+                    setPasteFeedback({
+                        tone: "info",
+                        message: result.warnings[0],
+                    });
+                }
+
+                return;
+            }
+
+            setPasteFeedback({
+                tone: result.status === "error" ? "error" : "info",
+                message: result.message ?? "Clipboard content could not be imported.",
+            });
+        }
+
+        window.addEventListener("paste", handlePaste);
+
+        return () => {
+            window.removeEventListener("paste", handlePaste);
+        };
+    }, [activeSession, document, inlineTextNodeId, insertSubtree, selectedNodeIds, setInlineTextNodeId, setSelectedNodeIds, viewport.x, viewport.y, viewport.zoom]);
 
     useEffect(() => {
         if (!activeSession || !document) {
@@ -642,7 +739,34 @@ export function DesignCanvas() {
         };
     }, [activeSession, candidateInsertionIndex, candidateInsertionMode, candidateParentId, document]);
 
-    function renderNode(nodeId: string, options?: { isRoot?: boolean; renderMode?: "tree" | "overlay"; overrideFrame?: DesignFrame }): React.ReactNode {
+    const rendererPresentationById = useMemo(() => {
+        if (!document || activeSession?.kind !== "move") {
+            return undefined;
+        }
+
+        const movingNode = document.nodes[activeSession.nodeId];
+        const parentNode = movingNode?.parentId ? document.nodes[movingNode.parentId] : null;
+
+        return {
+            [activeSession.nodeId]: parentNode && isAutoLayoutFrame(parentNode) ? "ghost" : "hidden",
+        } as const;
+    }, [activeSession, document]);
+
+    const rendererFrameOverrides = useMemo(() => {
+        const overrides: Record<string, DesignFrame> = {};
+
+        if (document && rootFrameOverride) {
+            overrides[document.rootNodeId] = rootFrameOverride;
+        }
+
+        if (activeSession?.kind === "resize") {
+            overrides[activeSession.nodeId] = activeSession.previewFrame;
+        }
+
+        return Object.keys(overrides).length > 0 ? overrides : undefined;
+    }, [activeSession, document, rootFrameOverride]);
+
+    function renderNodeOverlay(nodeId: string, options?: { isRoot?: boolean }): React.ReactNode {
         if (!document) {
             return null;
         }
@@ -656,14 +780,12 @@ export function DesignCanvas() {
         }
 
         const isRoot = options?.isRoot ?? false;
-        const renderMode = options?.renderMode ?? "tree";
-        const isMoveOverlay = renderMode === "overlay";
 
-        if (renderMode === "tree" && activeSession?.kind === "move" && activeSession.nodeId === node.id) {
+        if (activeSession?.kind === "move" && activeSession.nodeId === node.id) {
             return null;
         }
 
-        const frame = options?.overrideFrame ?? getPreviewFrame(node, activeSession);
+        const frame = isRoot && rootFrameOverride ? rootFrameOverride : getPreviewFrame(node, activeSession);
         const parentNode = node.parentId ? currentDocument.nodes[node.parentId] : null;
         const parentUsesAutoLayout = Boolean(parentNode && isAutoLayoutFrame(parentNode));
         const isSelected = selectedNodeIds.includes(node.id);
@@ -675,58 +797,21 @@ export function DesignCanvas() {
         const isCandidateParent = candidateParentId === node.id;
         const isActiveContainer = activeContainerId === node.id;
 
-        const sharedBoxSx = {
-            ...(parentUsesAutoLayout && !isMoveOverlay
-                ? {
-                    position: "relative" as const,
-                    flexShrink: 0,
-                }
-                : {
-                    position: "absolute" as const,
-                    left: frame.x,
-                    top: frame.y,
-                }),
-            width: frame.width,
-            height: frame.height,
-            transform: `rotate(${frame.rotation}deg)`,
-            transformOrigin: "center center",
-            borderRadius: `${node.style.borderRadius}px`,
-            opacity: node.visible ? (isMoveOverlay ? 0.92 : node.style.opacity) : 0.2,
-            pointerEvents: isMoveOverlay ? "none" : node.locked ? "none" : "auto",
-            overflow: isFrameNode(node) && node.clipContent ? "hidden" : "visible",
-            outline: isCandidateParent
-                ? "2px solid rgba(56, 189, 248, 0.96)"
-                : isSelected
-                    ? "1px solid rgba(56, 189, 248, 0.96)"
-                    : isHovered
-                        ? "1px solid rgba(125, 211, 252, 0.42)"
-                        : isActiveContainer
-                            ? "1px solid rgba(125, 211, 252, 0.28)"
-                            : "none",
-            outlineOffset: isSelected || isHovered ? "2px" : 0,
-            boxShadow: node.style.shadow
-                ? `${node.style.shadow.x}px ${node.style.shadow.y}px ${node.style.shadow.blur}px ${node.style.shadow.spread}px ${node.style.shadow.color}`
-                : "none",
-            background: node.type === "text" ? "transparent" : node.style.fill,
-            border: node.style.stroke ? `${node.style.strokeWidth}px solid ${node.style.stroke}` : "none",
-            transition: activeSession ? "none" : "outline-color 120ms ease, box-shadow 120ms ease",
-            ...(node.type === "frame" && node.layoutMode === "auto"
-                ? {
-                    display: "flex",
-                    flexDirection: node.autoLayout.direction === "horizontal" ? "row" : "column",
-                    justifyContent: mapAutoLayoutJustify(node.autoLayout.justifyContent),
-                    alignItems: mapAutoLayoutAlign(node.autoLayout.alignItems),
-                    gap: `${node.autoLayout.gap}px`,
-                    padding: `${node.autoLayout.padding.top}px ${node.autoLayout.padding.right}px ${node.autoLayout.padding.bottom}px ${node.autoLayout.padding.left}px`,
-                }
-                : {}),
-        };
+        const nodeOverlaySx = designEditorStyles.canvas.overlayNode({
+            isRoot,
+            parentUsesAutoLayout,
+            frame,
+            borderRadius: node.style.borderRadius,
+            locked: node.locked,
+            isCandidateParent,
+            isSelected,
+            isHovered,
+            isActiveContainer,
+            isEditingText,
+            hasActiveSession: Boolean(activeSession),
+        });
 
         function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-            if (isMoveOverlay) {
-                return;
-            }
-
             event.stopPropagation();
 
             if (event.button !== 0) {
@@ -783,10 +868,6 @@ export function DesignCanvas() {
         }
 
         function handleResizePointerDown(event: React.PointerEvent<HTMLDivElement>, handle: DesignResizeHandle) {
-            if (isMoveOverlay) {
-                return;
-            }
-
             event.stopPropagation();
             event.preventDefault();
 
@@ -801,28 +882,13 @@ export function DesignCanvas() {
         }
 
         const treeChildren = isContainerNode(node)
-            ? node.children.map((childId) => renderNode(childId, { renderMode }))
+            ? node.children.map((childId) => renderNodeOverlay(childId))
             : null;
-
-        if (renderMode === "tree" && activeSession?.kind === "move" && activeSession.nodeId === node.id && parentUsesAutoLayout) {
-            return (
-                <Box
-                    key={`${node.id}-placeholder`}
-                    sx={{
-                        width: frame.width,
-                        height: frame.height,
-                        flexShrink: 0,
-                        opacity: 0,
-                        pointerEvents: "none",
-                    }}
-                />
-            );
-        }
 
         return (
             <Box
                 key={node.id}
-                sx={sharedBoxSx}
+                sx={nodeOverlaySx}
                 onPointerDown={handlePointerDown}
                 onMouseEnter={() => hoverNode(node.id)}
                 onMouseLeave={() => hoverNode(null)}
@@ -834,111 +900,32 @@ export function DesignCanvas() {
                     }
                 }}
             >
-                {node.type === "text" ? (
-                    isEditingText ? (
-                        <Box
-                            component="textarea"
-                            value={draftText}
-                            autoFocus
-                            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setDraftText(event.target.value)}
-                            onBlur={commitInlineText}
-                            sx={{
-                                width: "100%",
-                                height: "100%",
-                                px: 0,
-                                py: 0,
-                                border: "none",
-                                outline: "none",
-                                resize: "none",
-                                background: "transparent",
-                                color: node.style.typography?.color ?? "#0f172a",
-                                fontFamily: node.style.typography?.fontFamily,
-                                fontSize: node.style.typography?.fontSize,
-                                fontWeight: node.style.typography?.fontWeight,
-                                lineHeight: node.style.typography?.lineHeight,
-                                textAlign: node.style.typography?.textAlign,
-                            }}
-                        />
-                    ) : (
-                        <Box
-                            sx={{
-                                width: "100%",
-                                height: "100%",
-                                color: node.style.typography?.color ?? "#0f172a",
-                                fontFamily: node.style.typography?.fontFamily,
-                                fontSize: node.style.typography?.fontSize,
-                                fontWeight: node.style.typography?.fontWeight,
-                                lineHeight: node.style.typography?.lineHeight,
-                                textAlign: node.style.typography?.textAlign,
-                                whiteSpace: "pre-wrap",
-                            }}
-                        >
-                            {node.text}
-                        </Box>
-                    )
-                ) : null}
-
-                {node.type === "image" ? (
-                    <Stack
-                        alignItems="center"
-                        justifyContent="center"
-                        spacing={1}
-                        sx={{
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: `${node.style.borderRadius}px`,
-                            background:
-                                "linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%), radial-gradient(circle at top left, rgba(125, 211, 252, 0.22), transparent 48%)",
-                            color: "#e2e8f0",
-                        }}
-                    >
-                        <Typography sx={{ fontSize: "0.78rem", letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>
-                            Image
-                        </Typography>
-                        <Typography sx={{ fontSize: "0.94rem", fontWeight: 600 }}>{node.name}</Typography>
-                    </Stack>
-                ) : null}
-
-                {node.type === "frame" && isRoot ? (
+                {node.type === "text" && isEditingText ? (
                     <Box
-                        sx={{
-                            position: "absolute",
-                            top: 18,
-                            left: 18,
-                            px: 1,
-                            py: 0.55,
-                            borderRadius: "999px",
-                            background: "rgba(8, 12, 19, 0.55)",
-                            color: "#e2e8f0",
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.08em",
-                            textTransform: "uppercase",
-                            zIndex: 2,
-                        }}
-                    >
-                        {node.name} · {Math.round(node.width)} x {Math.round(node.height)}
+                        component="textarea"
+                        value={draftText}
+                        autoFocus
+                        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setDraftText(event.target.value)}
+                        onBlur={commitInlineText}
+                        sx={designEditorStyles.canvas.textEditor({
+                            color: node.style.typography?.color,
+                            fontFamily: node.style.typography?.fontFamily,
+                            fontSize: node.style.typography?.fontSize,
+                            fontWeight: node.style.typography?.fontWeight,
+                            lineHeight: node.style.typography?.lineHeight,
+                            textAlign: node.style.typography?.textAlign,
+                        })}
+                    />
+                ) : null}
+
+                {node.type === "frame" && isRoot && canvasMode === "page" ? (
+                    <Box sx={designEditorStyles.canvas.rootBadge}>
+                        {node.name} · {Math.round(frame.width)} x {Math.round(frame.height)}
                     </Box>
                 ) : null}
 
                 {node.type === "frame" && node.layoutMode === "auto" ? (
-                    <Box
-                        sx={{
-                            position: "absolute",
-                            right: 14,
-                            top: 14,
-                            px: 0.9,
-                            py: 0.45,
-                            borderRadius: "999px",
-                            background: "rgba(8, 12, 19, 0.62)",
-                            color: "#7dd3fc",
-                            fontSize: "0.68rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            zIndex: 3,
-                        }}
-                    >
+                    <Box sx={designEditorStyles.canvas.autoLayoutBadge}>
                         Auto Layout
                     </Box>
                 ) : null}
@@ -946,23 +933,7 @@ export function DesignCanvas() {
                 {treeChildren}
 
                 {previewChild ? (
-                    <Box
-                        sx={{
-                            position: "absolute",
-                            left: previewChild.previewFrame.x,
-                            top: previewChild.previewFrame.y,
-                            width: previewChild.previewFrame.width,
-                            height: previewChild.previewFrame.height,
-                            borderRadius: previewChild.nodeType === "text" ? "8px" : "18px",
-                            border: "1px dashed rgba(125, 211, 252, 0.92)",
-                            background:
-                                previewChild.nodeType === "text"
-                                    ? "rgba(125, 211, 252, 0.12)"
-                                    : previewChild.nodeType === "image"
-                                        ? "linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(51, 65, 85, 0.75))"
-                                        : "rgba(125, 211, 252, 0.16)",
-                        }}
-                    />
+                    <Box sx={designEditorStyles.canvas.previewChild({ frame: previewChild.previewFrame, nodeType: previewChild.nodeType })} />
                 ) : null}
 
                 {isSelected && hasSingleSelection && !isRoot && effectiveTool === "select"
@@ -970,15 +941,7 @@ export function DesignCanvas() {
                         <Box
                             key={handle}
                             onPointerDown={(event) => handleResizePointerDown(event, handle)}
-                            sx={{
-                                position: "absolute",
-                                width: 10,
-                                height: 10,
-                                borderRadius: "999px",
-                                background: "#38bdf8",
-                                border: "2px solid #020617",
-                                ...getResizeHandleStyle(handle),
-                            }}
+                            sx={designEditorStyles.canvas.resizeHandle(getDesignResizeHandleStyle(handle))}
                         />
                     ))
                     : null}
@@ -1007,85 +970,49 @@ export function DesignCanvas() {
                 clearSelection();
                 setInlineTextNodeId(null);
             }}
-            sx={{
-                position: "relative",
-                minHeight: 0,
-                height: "100%",
-                overflow: "hidden",
-                background:
-                    "radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 28%), linear-gradient(180deg, #06080f 0%, #0f172a 100%)",
-                backgroundSize: "cover",
-                cursor:
-                    effectiveTool === "hand"
-                        ? activeSession?.kind === "pan"
-                            ? "grabbing"
-                            : "grab"
-                        : activeSession?.kind === "move"
-                            ? "grabbing"
-                            : "default",
-            }}
+            sx={designEditorStyles.canvas.root(effectiveTool, activeSession?.kind ?? null, canvasMode)}
         >
-            <Box
-                sx={{
-                    position: "absolute",
-                    inset: 0,
-                    backgroundImage:
-                        "linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px)",
-                    backgroundSize: `${24 * viewport.zoom}px ${24 * viewport.zoom}px`,
-                    backgroundPosition: `${viewport.x}px ${viewport.y}px`,
-                }}
-            />
+            {pasteFeedback ? (
+                <Box sx={designEditorStyles.canvas.pasteFeedback(pasteFeedback.tone)}>
+                    <Typography sx={designEditorStyles.canvas.pasteFeedbackText}>{pasteFeedback.message}</Typography>
+                </Box>
+            ) : null}
 
-            <Box
-                sx={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-                    transformOrigin: "top left",
-                    width: rootNode.width,
-                    height: rootNode.height,
-                }}
-            >
-                {renderNode(document.rootNodeId, { isRoot: true })}
+            <Box sx={designEditorStyles.canvas.grid(viewport)} />
+
+            <Box sx={designEditorStyles.canvas.stage(viewport, effectiveRootWidth, rootNode.height)}>
+                <DesignDocumentRenderer
+                    document={document}
+                    mode="editor"
+                    frameOverrides={rendererFrameOverrides}
+                    nodePresentationById={rendererPresentationById}
+                />
+
+                {renderNodeOverlay(document.rootNodeId, { isRoot: true })}
 
                 {activeSession?.kind === "move"
-                    ? renderNode(activeSession.nodeId, {
-                        renderMode: "overlay",
-                        overrideFrame: activeSession.previewAbsoluteFrame,
-                    })
+                    ? (
+                        <DesignDocumentRenderer
+                            document={document}
+                            mode="editor"
+                            rootNodeId={activeSession.nodeId}
+                            rootPositioning="absolute"
+                            frameOverrides={{
+                                [activeSession.nodeId]: activeSession.previewAbsoluteFrame,
+                            }}
+                        />
+                    )
                     : null}
 
                 {alignmentGuides.map((guide) => (
                     <Box
                         key={guide.id}
-                        sx={{
-                            position: "absolute",
-                            left: guide.axis === "vertical" ? guide.position : guide.start,
-                            top: guide.axis === "vertical" ? guide.start : guide.position,
-                            width: guide.axis === "vertical" ? 1.5 : Math.max(1.5, guide.end - guide.start),
-                            height: guide.axis === "vertical" ? Math.max(1.5, guide.end - guide.start) : 1.5,
-                            background: guide.source === "container" ? "rgba(248, 250, 252, 0.92)" : "rgba(56, 189, 248, 0.96)",
-                            boxShadow: "0 0 0 1px rgba(8, 12, 19, 0.42)",
-                            pointerEvents: "none",
-                        }}
+                        sx={designEditorStyles.canvas.alignmentGuide(guide)}
                     />
                 ))}
 
                 {autoLayoutInsertionIndicator ? (
-                    <Box
-                        sx={{
-                            position: "absolute",
-                            left: autoLayoutInsertionIndicator.left,
-                            top: autoLayoutInsertionIndicator.top,
-                            width: autoLayoutInsertionIndicator.width,
-                            height: autoLayoutInsertionIndicator.height,
-                            borderRadius: "999px",
-                            background: "rgba(248, 250, 252, 0.94)",
-                            boxShadow: "0 0 0 1px rgba(8, 12, 19, 0.42)",
-                            pointerEvents: "none",
-                        }}
-                    />
+                    <Box sx={designEditorStyles.canvas.insertionIndicator(autoLayoutInsertionIndicator)} />
                 ) : null}
             </Box>
         </Box>

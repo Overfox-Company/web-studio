@@ -2,17 +2,32 @@
 
 import { useMemo } from "react";
 
+import { ModernTvIcon, SmartPhone01Icon } from "@hugeicons-pro/core-stroke-standard";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
 import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 
+import { designEditorStyles } from "@/src/customization/design-editor";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import type { DesignTool } from "@/src/features/design-editor/types/interaction.types";
+import type { PageViewportMode } from "@/src/features/project-editor/types/editor.types";
 
 interface DesignEditorTopbarProps {
     projectId: string;
+    viewId: string;
     viewName: string;
     saveState: "saved" | "saving" | "error";
+    compileState: "idle" | "compiling" | "success" | "error";
+    compileMessage: string | null;
+    onCompile: () => void;
+    viewportMode: PageViewportMode;
+    onViewportModeChange: (mode: PageViewportMode) => void;
 }
+
+const VIEWPORT_ITEMS: Array<{ mode: PageViewportMode; label: string; icon: typeof ModernTvIcon }> = [
+    { mode: "desktop", label: "Desktop", icon: ModernTvIcon },
+    { mode: "mobile", label: "Mobile", icon: SmartPhone01Icon },
+];
 
 const TOOLBAR_ITEMS: Array<{ tool: DesignTool; label: string; shortcut: string }> = [
     { tool: "select", label: "Select", shortcut: "V" },
@@ -34,7 +49,28 @@ function getStatusLabel(saveState: DesignEditorTopbarProps["saveState"]) {
     }
 }
 
-export function DesignEditorTopbar({ projectId, viewName, saveState }: DesignEditorTopbarProps) {
+function getCompileLabel(compileState: DesignEditorTopbarProps["compileState"]) {
+    switch (compileState) {
+        case "compiling":
+            return "Compiling...";
+        case "success":
+            return "Compile ready";
+        case "error":
+            return "Retry compile";
+        default:
+            return "Compile";
+    }
+}
+
+function getPreviewWindowName(projectId: string, viewId: string) {
+    return `webstudio-preview-${projectId}-${viewId}`;
+}
+
+function getPreviewRoute(projectId: string, viewId: string) {
+    return `/projects/${projectId}/editor/view/${viewId}/preview`;
+}
+
+export function DesignEditorTopbar({ projectId, viewId, viewName, saveState, compileState, compileMessage, onCompile, viewportMode, onViewportModeChange }: DesignEditorTopbarProps) {
     const router = useRouter();
 
     const activeTool = useDesignInteractionStore((state) => state.activeTool);
@@ -53,75 +89,81 @@ export function DesignEditorTopbar({ projectId, viewName, saveState }: DesignEdi
         });
     }
 
+    function handleOpenPreview() {
+        const previewWindow = window.open(getPreviewRoute(projectId, viewId), getPreviewWindowName(projectId, viewId));
+        previewWindow?.focus();
+    }
+
     return (
-        <Box
-            sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 20,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 2,
-                flexWrap: "wrap",
-                px: { xs: 2, lg: 3 },
-                py: 1.5,
-                borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
-                background: "rgba(8, 12, 19, 0.86)",
-                backdropFilter: "blur(24px)",
-            }}
-        >
-            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0, flexWrap: "wrap" }}>
+        <Box sx={designEditorStyles.topbar.root}>
+            <Stack direction="row" spacing={1.25} alignItems="center" sx={designEditorStyles.topbar.leftGroup}>
                 <Button
                     variant="outlined"
                     onClick={() => router.push(`/projects/${projectId}/editor`)}
-                    sx={{
-                        minWidth: 0,
-                        px: 1.4,
-                        color: "#e2e8f0",
-                        borderColor: "rgba(148, 163, 184, 0.24)",
-                        background: "rgba(15, 23, 42, 0.42)",
-                    }}
+                    sx={designEditorStyles.topbar.chromeButton}
                 >
                     Back
                 </Button>
 
-                <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontSize: "0.72rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#64748b" }}>
+                <Stack spacing={0.25} sx={designEditorStyles.topbar.meta}>
+                    <Typography sx={designEditorStyles.topbar.eyebrow}>
                         Design Editor
                     </Typography>
-                    <Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#f8fafc", letterSpacing: "-0.03em" }}>
+                    <Typography sx={designEditorStyles.topbar.title}>
                         {viewName}
                     </Typography>
                 </Stack>
 
-                <Box
-                    sx={{
-                        px: 1.1,
-                        py: 0.55,
-                        borderRadius: "999px",
-                        border: "1px solid rgba(148, 163, 184, 0.18)",
-                        background: "rgba(15, 23, 42, 0.52)",
-                        color: saveState === "error" ? "#fca5a5" : "#cbd5e1",
-                        fontSize: "0.76rem",
-                        fontWeight: 600,
-                    }}
-                >
+                <Box sx={designEditorStyles.topbar.status(saveState)}>
                     {getStatusLabel(saveState)}
                 </Box>
+
+                {compileMessage ? (
+                    <Box sx={designEditorStyles.topbar.status(compileState === "error" ? "error" : "saved")}>
+                        {compileMessage}
+                    </Box>
+                ) : null}
+
+                <Button
+                    variant="outlined"
+                    onClick={handleOpenPreview}
+                    sx={designEditorStyles.topbar.chromeButton}
+                >
+                    Preview
+                </Button>
+
+                <Button
+                    variant="outlined"
+                    onClick={onCompile}
+                    disabled={compileState === "compiling"}
+                    sx={designEditorStyles.topbar.chromeButton}
+                >
+                    {getCompileLabel(compileState)}
+                </Button>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: "wrap" }}>
-                <Stack
-                    direction="row"
-                    spacing={0.75}
-                    sx={{
-                        p: 0.5,
-                        borderRadius: "999px",
-                        border: "1px solid rgba(148, 163, 184, 0.16)",
-                        background: "rgba(15, 23, 42, 0.58)",
-                    }}
-                >
+            <Stack direction="row" spacing={1} alignItems="center" sx={designEditorStyles.topbar.rightGroup}>
+                <Stack direction="row" spacing={0.5} sx={designEditorStyles.topbar.viewportGroup}>
+                    {VIEWPORT_ITEMS.map((item) => {
+                        const isActive = viewportMode === item.mode;
+
+                        return (
+                            <Button
+                                key={item.mode}
+                                variant={isActive ? "contained" : "text"}
+                                onClick={() => onViewportModeChange(item.mode)}
+                                sx={designEditorStyles.topbar.viewportButton(isActive)}
+                            >
+                                <HugeiconsIcon icon={item.icon} size={24} strokeWidth={1.5} />
+                                <Typography sx={designEditorStyles.topbar.viewportButtonLabel}>{item.label}</Typography>
+                            </Button>
+                        );
+                    })}
+                </Stack>
+
+                <Divider orientation="vertical" flexItem sx={designEditorStyles.topbar.divider} />
+
+                <Stack direction="row" spacing={0.75} sx={designEditorStyles.topbar.toolGroup}>
                     {TOOLBAR_ITEMS.map((item) => {
                         const isActive = activeTool === item.tool;
 
@@ -130,50 +172,36 @@ export function DesignEditorTopbar({ projectId, viewName, saveState }: DesignEdi
                                 key={item.tool}
                                 variant={isActive ? "contained" : "text"}
                                 onClick={() => setActiveTool(item.tool)}
-                                sx={{
-                                    minWidth: 0,
-                                    gap: 0.8,
-                                    px: 1.25,
-                                    color: isActive ? "#020617" : "#cbd5e1",
-                                    background: isActive ? "#e2e8f0" : "transparent",
-                                    "&:hover": {
-                                        background: isActive ? "#f8fafc" : "rgba(255, 255, 255, 0.06)",
-                                    },
-                                }}
+                                sx={designEditorStyles.topbar.toolButton(isActive)}
                             >
-                                <Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }}>{item.label}</Typography>
-                                <Typography sx={{ fontSize: "0.7rem", color: isActive ? "#334155" : "#64748b" }}>{item.shortcut}</Typography>
+                                <Typography sx={designEditorStyles.topbar.toolLabel}>{item.label}</Typography>
+                                <Typography sx={designEditorStyles.topbar.toolShortcut(isActive)}>{item.shortcut}</Typography>
                             </Button>
                         );
                     })}
                 </Stack>
 
-                <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(148, 163, 184, 0.16)", display: { xs: "none", sm: "block" } }} />
+                <Divider orientation="vertical" flexItem sx={designEditorStyles.topbar.divider} />
 
                 <Stack direction="row" spacing={0.75} alignItems="center">
                     <Button
                         variant="text"
                         onClick={() => updateZoom(viewport.zoom - 0.1)}
-                        sx={{ minWidth: 36, px: 0, color: "#cbd5e1" }}
+                        sx={designEditorStyles.topbar.zoomStepButton}
                     >
                         -
                     </Button>
                     <Button
                         variant="outlined"
                         onClick={() => setViewport({ x: 120, y: 96, zoom: 0.9 })}
-                        sx={{
-                            minWidth: 84,
-                            color: "#e2e8f0",
-                            borderColor: "rgba(148, 163, 184, 0.22)",
-                            background: "rgba(15, 23, 42, 0.48)",
-                        }}
+                        sx={designEditorStyles.topbar.zoomDisplayButton}
                     >
                         {zoomLabel}
                     </Button>
                     <Button
                         variant="text"
                         onClick={() => updateZoom(viewport.zoom + 0.1)}
-                        sx={{ minWidth: 36, px: 0, color: "#cbd5e1" }}
+                        sx={designEditorStyles.topbar.zoomStepButton}
                     >
                         +
                     </Button>

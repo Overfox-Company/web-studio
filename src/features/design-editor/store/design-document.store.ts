@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { designEditorDefaults } from "@/src/customization/design-editor";
 import { createDesignGroupNode } from "@/src/features/design-editor/utils/create-design-node";
 import {
     getCommonParentId,
@@ -24,6 +25,13 @@ import type { DesignFrame } from "@/src/features/design-editor/types/interaction
 
 interface InsertNodeOptions {
     index?: number | null;
+}
+
+interface InsertSubtreePayload {
+    nodes: Record<string, DesignNode>;
+    rootNodeIds: string[];
+    targetParentId: string;
+    insertIndex?: number | null;
 }
 
 interface ReparentNodesPayload {
@@ -64,6 +72,7 @@ interface DesignDocumentStore {
     clearDocument: () => void;
     patchNode: (nodeId: string, patch: DesignNodePatch) => void;
     insertNode: (node: DesignNode, options?: InsertNodeOptions) => void;
+    insertSubtree: (payload: InsertSubtreePayload) => void;
     removeNode: (nodeId: string) => void;
     commitNodeFrame: (nodeId: string, frame: DesignFrame) => void;
     reparentNodes: (payload: ReparentNodesPayload) => void;
@@ -113,14 +122,7 @@ function mergeNodeStyle(currentStyle: DesignNodeStyle, patch: DesignNodePatch["s
         ...patch,
         typography: patch.typography
             ? {
-                ...(currentStyle.typography ?? {
-                    fontFamily: "var(--font-ibm-plex-sans)",
-                    fontSize: 16,
-                    fontWeight: 400,
-                    lineHeight: 1.5,
-                    textAlign: "left",
-                    color: "#0f172a",
-                }),
+                ...(currentStyle.typography ?? designEditorDefaults.typography),
                 ...patch.typography,
             }
             : currentStyle.typography,
@@ -138,13 +140,7 @@ function mergeNodeStyle(currentStyle: DesignNodeStyle, patch: DesignNodePatch["s
                 ? null
                 : patch.shadow
                     ? {
-                        ...(currentStyle.shadow ?? {
-                            x: 0,
-                            y: 12,
-                            blur: 24,
-                            spread: -12,
-                            color: "rgba(15, 23, 42, 0.18)",
-                        }),
+                        ...(currentStyle.shadow ?? designEditorDefaults.shadows.mergeFallback),
                         ...patch.shadow,
                     }
                     : currentStyle.shadow,
@@ -187,6 +183,10 @@ function applyNodePatch(node: DesignNode, patch: DesignNodePatch): DesignNode {
 
     if (node.type !== "image" && "src" in nextNode) {
         delete (nextNode as { src?: string }).src;
+    }
+
+    if (JSON.stringify(nextNode) === JSON.stringify(node)) {
+        return node;
     }
 
     return nextNode;
@@ -258,6 +258,52 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                             children: insertChildrenAt(parentNode.children, [node.id], options?.index),
                         },
                     },
+                }),
+            };
+        });
+    },
+
+    insertSubtree: ({ nodes, rootNodeIds, targetParentId, insertIndex }) => {
+        set((state) => {
+            const document = state.document;
+
+            if (!document || rootNodeIds.length === 0 || !document.nodes[targetParentId]) {
+                return state;
+            }
+
+            const targetParent = document.nodes[targetParentId];
+
+            if (!isContainerNode(targetParent)) {
+                return state;
+            }
+
+            const nextNodes = {
+                ...document.nodes,
+                ...nodes,
+            };
+
+            for (const rootNodeId of rootNodeIds) {
+                const rootNode = nextNodes[rootNodeId];
+
+                if (!rootNode) {
+                    continue;
+                }
+
+                nextNodes[rootNodeId] = {
+                    ...rootNode,
+                    parentId: targetParentId,
+                };
+            }
+
+            nextNodes[targetParentId] = {
+                ...targetParent,
+                children: insertChildrenAt(targetParent.children, rootNodeIds, insertIndex),
+            };
+
+            return {
+                document: touchDocument({
+                    ...document,
+                    nodes: nextNodes,
                 }),
             };
         });

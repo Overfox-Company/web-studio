@@ -6,20 +6,20 @@ import type {
 } from "@/src/features/project-editor/utils/socket-types";
 
 const NODE_CONNECTION_POLICY: Record<ProjectNodeKind, Partial<Record<ProjectNodeKind, SocketType[]>>> = {
-    view: {
+    page: {
         action: ["trigger", "payload"],
         api: ["trigger", "payload"],
     },
     api: {
         action: ["trigger", "payload"],
-        view: ["result"],
+        page: ["result"],
     },
     database: {
         action: ["entity"],
     },
     action: {
         database: ["query"],
-        view: ["result"],
+        page: ["result"],
         action: ["trigger", "result"],
     },
 };

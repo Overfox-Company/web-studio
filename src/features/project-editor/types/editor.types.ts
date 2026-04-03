@@ -3,12 +3,17 @@ import type { Edge, Node, XYPosition } from "@xyflow/react";
 import type { DesignDocumentSnapshot } from "@/src/features/design-editor/types/design.types";
 import type { SocketType } from "@/src/features/project-editor/utils/socket-types";
 
-export const PROJECT_NODE_KINDS = ["view", "api", "database", "action"] as const;
+export const PROJECT_NODE_KINDS = ["page", "api", "database", "action"] as const;
+export const LEGACY_PROJECT_NODE_KIND = "view" as const;
 
 export type ProjectNodeKind = (typeof PROJECT_NODE_KINDS)[number];
+export type LegacyProjectNodeKind = typeof LEGACY_PROJECT_NODE_KIND;
 
 export const VIEW_RENDER_MODES = ["SSR", "CSR"] as const;
 export type ViewRenderMode = (typeof VIEW_RENDER_MODES)[number];
+
+export const PAGE_VIEWPORT_MODES = ["desktop", "mobile"] as const;
+export type PageViewportMode = (typeof PAGE_VIEWPORT_MODES)[number];
 
 export const API_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 export type ApiMethod = (typeof API_METHODS)[number];
@@ -19,7 +24,14 @@ export type DatabaseProvider = (typeof DATABASE_PROVIDERS)[number];
 export const ACTION_TRIGGERS = ["user", "system", "cron"] as const;
 export type ActionTrigger = (typeof ACTION_TRIGGERS)[number];
 
-export interface ViewNodeData {
+export interface PageNodeData {
+    slug: string;
+    index: boolean;
+    viewportMode: PageViewportMode;
+    designDocument?: DesignDocumentSnapshot;
+}
+
+export interface LegacyViewNodeData {
     route: string;
     renderMode: ViewRenderMode;
     layout: string;
@@ -43,7 +55,7 @@ export interface ActionNodeData {
     target: string;
 }
 
-interface ProjectNodeBase<TKind extends ProjectNodeKind, TData> {
+interface ProjectNodeBase<TKind extends ProjectNodeKind | LegacyProjectNodeKind, TData> {
     id: string;
     kind: TKind;
     name: string;
@@ -54,12 +66,13 @@ interface ProjectNodeBase<TKind extends ProjectNodeKind, TData> {
     updatedAt: string;
 }
 
-export type ViewNode = ProjectNodeBase<"view", ViewNodeData>;
+export type PageNode = ProjectNodeBase<"page", PageNodeData>;
+export type LegacyViewNode = ProjectNodeBase<"view", LegacyViewNodeData>;
 export type ApiNode = ProjectNodeBase<"api", ApiNodeData>;
 export type DatabaseNode = ProjectNodeBase<"database", DatabaseNodeData>;
 export type ActionNode = ProjectNodeBase<"action", ActionNodeData>;
 
-export type ProjectNode = ViewNode | ApiNode | DatabaseNode | ActionNode;
+export type ProjectNode = PageNode | LegacyViewNode | ApiNode | DatabaseNode | ActionNode;
 
 export interface ProjectEdge {
     id: string;
@@ -130,6 +143,7 @@ export interface ExportedProjectSpec {
         databases: DatabaseNode[];
         apis: ApiNode[];
         actions: ActionNode[];
-        views: ViewNode[];
+        pages: PageNode[];
+        legacyViews: LegacyViewNode[];
     };
 }

@@ -11,21 +11,21 @@ import {
     EditorSectionHint,
     EditorSectionTitle,
     FieldLabel,
-    PanelEyebrow,
     PanelHeader,
     SelectField,
     SwitchField,
     TextField,
     ToolbarButton,
 } from "@/src/features/project-editor/components/ui/primitives";
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
 import { API_METHODS, type ProjectNode } from "@/src/features/project-editor/types/editor.types";
 
 function MetadataRow({ label, value }: { label: string; value: string }) {
     return (
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-            <Typography sx={{ fontSize: "0.8rem", color: "#667085" }}>{label}</Typography>
-            <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#111827", fontFamily: "var(--font-ibm-plex-mono)" }}>
+            <Typography sx={projectEditorStyles.inspector.metadataLabel}>{label}</Typography>
+            <Typography sx={projectEditorStyles.inspector.metadataValue}>
                 {value}
             </Typography>
         </Stack>
@@ -35,20 +35,21 @@ function MetadataRow({ label, value }: { label: string; value: string }) {
 function TypeConfigFields({ node }: { node: ProjectNode }) {
     const updateNode = useProjectEditorStore((state) => state.updateNode);
 
-    if (node.kind === "view") {
+    if (node.kind === "page") {
         return (
             <EditorSection>
-                <FieldLabel>Route</FieldLabel>
-                <TextField value={node.data.route} onChange={(event) => updateNode(node.id, { data: { route: event.target.value || "/" } })} />
+                <FieldLabel>Slug</FieldLabel>
+                <TextField value={node.data.slug} onChange={(event) => updateNode(node.id, { data: { slug: event.target.value } })} />
 
-                <FieldLabel>Render mode</FieldLabel>
-                <SelectField select value={node.data.renderMode} onChange={(event) => updateNode(node.id, { data: { renderMode: event.target.value as "SSR" | "CSR" } })}>
-                    <MenuItem value="SSR">SSR</MenuItem>
-                    <MenuItem value="CSR">CSR</MenuItem>
-                </SelectField>
-
-                <FieldLabel>Layout</FieldLabel>
-                <TextField value={node.data.layout} onChange={(event) => updateNode(node.id, { data: { layout: event.target.value } })} />
+                <SwitchField
+                    label="Entry page"
+                    control={
+                        <Switch
+                            checked={node.data.index}
+                            onChange={(event) => updateNode(node.id, { data: { index: event.target.checked } })}
+                        />
+                    }
+                />
             </EditorSection>
         );
     }
@@ -99,19 +100,23 @@ function TypeConfigFields({ node }: { node: ProjectNode }) {
         );
     }
 
-    return (
-        <EditorSection>
-            <FieldLabel>Trigger</FieldLabel>
-            <SelectField select value={node.data.trigger} onChange={(event) => updateNode(node.id, { data: { trigger: event.target.value as "user" | "system" | "cron" } })}>
-                <MenuItem value="user">User</MenuItem>
-                <MenuItem value="system">System</MenuItem>
-                <MenuItem value="cron">Cron</MenuItem>
-            </SelectField>
+    if (node.kind === "action") {
+        return (
+            <EditorSection>
+                <FieldLabel>Trigger</FieldLabel>
+                <SelectField select value={node.data.trigger} onChange={(event) => updateNode(node.id, { data: { trigger: event.target.value as "user" | "system" | "cron" } })}>
+                    <MenuItem value="user">User</MenuItem>
+                    <MenuItem value="system">System</MenuItem>
+                    <MenuItem value="cron">Cron</MenuItem>
+                </SelectField>
 
-            <FieldLabel>Target</FieldLabel>
-            <TextField value={node.data.target} onChange={(event) => updateNode(node.id, { data: { target: event.target.value } })} />
-        </EditorSection>
-    );
+                <FieldLabel>Target</FieldLabel>
+                <TextField value={node.data.target} onChange={(event) => updateNode(node.id, { data: { target: event.target.value } })} />
+            </EditorSection>
+        );
+    }
+
+    return null;
 }
 
 
@@ -131,9 +136,9 @@ export function InspectorPanel() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 24 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    style={{ height: "100%" }}
+                    style={projectEditorStyles.inspector.motionWrapper}
                 >
-                    <EditorPanel elevation={0} sx={{ height: "100%", p: 2.25, overflowY: "auto", }}>
+                    <EditorPanel elevation={0} sx={projectEditorStyles.inspector.panel}>
                         <Stack spacing={2.25}>
                             <PanelHeader>
                                 <br />

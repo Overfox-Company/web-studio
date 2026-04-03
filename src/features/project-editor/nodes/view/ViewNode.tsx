@@ -28,8 +28,8 @@ export const ViewNode = memo(function ViewNode({ data, selected, dragging }: Nod
             preview={Boolean(data.isPreview)}
             onDoubleClick={handleOpenDesignEditor}
             meta={[
-                { label: "route", value: node.kind === "view" ? node.data.route : "-" },
-                { label: "render", value: node.kind === "view" ? node.data.renderMode : "-" },
+                { label: "slug", value: node.kind === "page" ? node.data.slug : "-" },
+                { label: "entry", value: node.kind === "page" ? (node.data.index ? "index.html" : "secondary") : "-" },
             ]}
         />
     );

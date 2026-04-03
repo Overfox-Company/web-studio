@@ -1,16 +1,19 @@
 "use client";
 
-import { Stack, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
+import { Stack } from "@mui/material";
 import { Download01Icon } from "@hugeicons-pro/core-solid-standard";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { ProjectIcon } from "@/src/features/project-editor/components/ui/ProjectIcon";
 import { StatusBadge, TextField, ToolbarButton } from "@/src/features/project-editor/components/ui/primitives";
 import { useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
 
 interface EditorTopbarProps {
-    projectId: string;
-    onBuild: () => void;
+    onCompile: () => void;
     onFitView: () => void;
+    compileState: "idle" | "compiling" | "success" | "error";
+    compileMessage: string | null;
 }
 
 function getSaveLabel(saveState: string) {
@@ -26,9 +29,24 @@ function getSaveLabel(saveState: string) {
     }
 }
 
-export function EditorTopbar({ projectId, onBuild, onFitView }: EditorTopbarProps) {
+function getCompileLabel(compileState: EditorTopbarProps["compileState"]) {
+    switch (compileState) {
+        case "compiling":
+            return "Compiling...";
+        case "success":
+            return "Compile ready";
+        case "error":
+            return "Retry compile";
+        default:
+            return "Compile";
+    }
+}
+
+export function EditorTopbar({ onCompile, onFitView, compileState, compileMessage }: EditorTopbarProps) {
+    const router = useRouter();
     const projectName = useProjectEditorStore((state) => state.project.name);
     const saveState = useProjectEditorStore((state) => state.ui.saveState);
+    const projectId = useProjectEditorStore((state) => state.project.projectId);
     const setProjectName = useProjectEditorStore((state) => state.setProjectName);
 
     return (
@@ -37,13 +55,7 @@ export function EditorTopbar({ projectId, onBuild, onFitView }: EditorTopbarProp
             alignItems={{ xs: "stretch", lg: "center" }}
             justifyContent="space-between"
             spacing={2}
-            sx={{
-                px: 2,
-                py: 1,
-                borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
-                background: "rgba(255,255,255,0.7)",
-                backdropFilter: "blur(18px)",
-            }}
+            sx={projectEditorStyles.topbar.root}
         >
             <Stack spacing={1} minWidth={0}>
 
@@ -51,17 +63,21 @@ export function EditorTopbar({ projectId, onBuild, onFitView }: EditorTopbarProp
                     value={projectName}
                     onChange={(event) => setProjectName(event.target.value)}
                     placeholder="Project name"
-                    sx={{ maxWidth: 360 }}
+                    sx={projectEditorStyles.topbar.projectNameField}
                 />
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={1.25} flexWrap="wrap" useFlexGap>
                 <StatusBadge label={getSaveLabel(saveState)} />
+                {compileMessage ? <StatusBadge label={compileMessage} /> : null}
                 <ToolbarButton variant="outlined" onClick={onFitView}>
                     Fit canvas
                 </ToolbarButton>
-                <ToolbarButton variant="contained" onClick={onBuild} startIcon={<ProjectIcon icon={Download01Icon} size={18} />}>
-                    Build
+                <ToolbarButton variant="outlined" onClick={() => router.push(`/projects/${projectId}/components`)}>
+                    Components
+                </ToolbarButton>
+                <ToolbarButton variant="contained" onClick={onCompile} disabled={compileState === "compiling"} startIcon={<ProjectIcon icon={Download01Icon} size={18} />}>
+                    {getCompileLabel(compileState)}
                 </ToolbarButton>
             </Stack>
         </Stack>

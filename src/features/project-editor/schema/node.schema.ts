@@ -5,7 +5,7 @@ import {
     ACTION_TRIGGERS,
     API_METHODS,
     DATABASE_PROVIDERS,
-    PROJECT_NODE_KINDS,
+    PAGE_VIEWPORT_MODES,
     VIEW_RENDER_MODES,
 } from "@/src/features/project-editor/types/editor.types";
 import { SOCKET_TYPES } from "@/src/features/project-editor/utils/socket-types";
@@ -13,6 +13,13 @@ import { SOCKET_TYPES } from "@/src/features/project-editor/utils/socket-types";
 export const nodePositionSchema = z.object({
     x: z.number(),
     y: z.number(),
+});
+
+export const pageNodeDataSchema = z.object({
+    slug: z.string().min(1),
+    index: z.boolean(),
+    viewportMode: z.enum(PAGE_VIEWPORT_MODES),
+    designDocument: designDocumentSchema.optional(),
 });
 
 export const viewNodeDataSchema = z.object({
@@ -48,31 +55,38 @@ const projectNodeBaseSchema = {
     updatedAt: z.string().min(1),
 };
 
+export const pageNodeSchema = z.object({
+    ...projectNodeBaseSchema,
+    kind: z.literal("page"),
+    data: pageNodeDataSchema,
+});
+
 export const viewNodeSchema = z.object({
     ...projectNodeBaseSchema,
-    kind: z.literal(PROJECT_NODE_KINDS[0]),
+    kind: z.literal("view"),
     data: viewNodeDataSchema,
 });
 
 export const apiNodeSchema = z.object({
     ...projectNodeBaseSchema,
-    kind: z.literal(PROJECT_NODE_KINDS[1]),
+    kind: z.literal("api"),
     data: apiNodeDataSchema,
 });
 
 export const databaseNodeSchema = z.object({
     ...projectNodeBaseSchema,
-    kind: z.literal(PROJECT_NODE_KINDS[2]),
+    kind: z.literal("database"),
     data: databaseNodeDataSchema,
 });
 
 export const actionNodeSchema = z.object({
     ...projectNodeBaseSchema,
-    kind: z.literal(PROJECT_NODE_KINDS[3]),
+    kind: z.literal("action"),
     data: actionNodeDataSchema,
 });
 
 export const projectNodeSchema = z.discriminatedUnion("kind", [
+    pageNodeSchema,
     viewNodeSchema,
     apiNodeSchema,
     databaseNodeSchema,

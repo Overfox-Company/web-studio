@@ -1,9 +1,12 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
+@import "../src/customization/shared.variables.css";
+@import "../src/customization/project-editor.variables.css";
+@import "../src/customization/design-editor.variables.css";
 
 :root {
-  --background: #eef2f6;
-  --foreground: #111827;
+  --background: var(--ws-app-background);
+  --foreground: var(--ws-app-foreground);
 }
 
 * {
@@ -15,9 +18,7 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(79, 124, 255, 0.08), transparent 24%),
-    linear-gradient(180deg, #f7f9fc 0%, #eef2f6 100%);
+  background: var(--ws-app-body-background);
   color: var(--foreground);
   font-family: var(--font-ibm-plex-sans), sans-serif;
   min-height: 100vh;
@@ -34,33 +35,33 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(148, 163, 184, 0.08);
+  background: var(--ws-scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.24);
-  border-radius: 6px;
+  background: var(--ws-scrollbar-thumb);
+  border-radius: var(--ws-radius-sm);
 }
 
 .react-flow__controls,
 .react-flow__minimap {
-  border-radius: 4px;
+  border-radius: var(--ws-radius-xs);
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--ws-react-flow-control-border);
+  background: var(--ws-react-flow-control-background);
   backdrop-filter: blur(18px);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--ws-react-flow-control-shadow);
 }
 
 .react-flow__controls-button {
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-  color: #334155;
-  transition: background-color 160ms ease, color 160ms ease;
+  background: var(--ws-react-flow-button-background);
+  border-bottom: 1px solid var(--ws-react-flow-button-border);
+  color: var(--ws-react-flow-button-text);
+  transition: background-color var(--ws-transition-fast), color var(--ws-transition-fast);
 }
 
 .react-flow__controls-button:hover {
-  background: #f8fafc;
+  background: var(--ws-react-flow-button-background-hover);
 }
 
 .react-flow__controls-button:last-child {
@@ -81,7 +82,7 @@ a {
 }
 
 .react-flow__edge-textbg {
-  fill: #ffffff;
+  fill: var(--ws-surface-white);
 }
 
 .react-flow__panel {
@@ -91,18 +92,18 @@ a {
 .react-flow__handle {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  background: #4f7cff;
+  border: 2px solid var(--ws-react-flow-handle-border);
+  background: var(--ws-react-flow-handle-background);
 }
 
 .project-node-handle {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.96);
-  background: var(--socket-color, #94a3b8);
+  border: 2px solid var(--ws-project-handle-border);
+  background: var(--socket-color, var(--ws-project-handle-fallback));
   opacity: 1;
-  transition: opacity 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+  transition: opacity var(--ws-transition-fast), filter var(--ws-transition-fast), box-shadow var(--ws-transition-fast);
 }
 
 .project-node-handle.connectingfrom,
@@ -114,30 +115,30 @@ a {
   opacity: 1;
   filter: saturate(1.08) brightness(1.04);
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.96),
-    0 0 0 6px rgba(255, 255, 255, 0.22),
+    0 0 0 2px var(--ws-project-handle-border),
+    0 0 0 6px var(--ws-project-handle-halo),
     0 0 18px var(--socket-color, rgba(79, 124, 255, 0.32));
 }
 
 .project-node-handle.is-dimmed {
   opacity: 0.28;
   filter: saturate(0.35);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 1px var(--ws-project-handle-dim-border);
 }
 
 .project-flow-edge .react-flow__edge-path {
   stroke-linecap: round;
-  transition: stroke-width 140ms ease, opacity 140ms ease, filter 140ms ease;
+  transition: stroke-width var(--ws-transition-fast), opacity var(--ws-transition-fast), filter var(--ws-transition-fast);
 }
 
 .project-flow-edge:hover .react-flow__edge-path {
   stroke-width: 2.45;
-  filter: drop-shadow(0 0 8px rgba(15, 23, 42, 0.14));
+  filter: drop-shadow(0 0 8px var(--ws-project-edge-hover-shadow));
 }
 
 .project-flow-edge.selected .react-flow__edge-path {
   stroke-width: 2.8;
-  filter: drop-shadow(0 0 10px rgba(15, 23, 42, 0.2));
+  filter: drop-shadow(0 0 10px var(--ws-project-edge-selected-shadow));
 }
 
 .react-flow__attribution {

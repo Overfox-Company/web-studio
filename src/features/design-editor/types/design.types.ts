@@ -1,4 +1,4 @@
-export const DESIGN_NODE_TYPES = ["frame", "group", "rectangle", "text", "image"] as const;
+export const DESIGN_NODE_TYPES = ["frame", "group", "rectangle", "text", "image", "svg-asset", "component-instance"] as const;
 export type DesignNodeType = (typeof DESIGN_NODE_TYPES)[number];
 
 export const DESIGN_LAYOUT_MODES = ["absolute", "auto"] as const;
@@ -46,6 +46,16 @@ export interface DesignTypography {
 export interface DesignImageStyle {
     src: string;
     objectFit: DesignImageObjectFit;
+}
+
+export interface DesignImportDiagnostics {
+    source: string;
+    warnings: string[];
+    metaJson: string | null;
+    rawHtml: string | null;
+    figmetaBase64: string | null;
+    figmaBase64: string | null;
+    decoder: string | null;
 }
 
 export interface DesignAutoLayout {
@@ -102,7 +112,22 @@ export interface DesignImageNode extends DesignNodeBase<"image"> {
     src: string;
 }
 
-export type DesignNode = DesignFrameNode | DesignGroupNode | DesignRectangleNode | DesignTextNode | DesignImageNode;
+export interface DesignSvgAssetNode extends DesignNodeBase<"svg-asset"> {
+    svgMarkup: string;
+    viewBox: string | null;
+    diagnostics?: DesignImportDiagnostics | null;
+}
+
+// Architecture note:
+// - A Page document contains Component Instance nodes.
+// - A Component Variant document defines reusable visual content.
+// - A Component Instance node references a variant; it is not the variant itself.
+export interface DesignComponentInstanceNode extends DesignNodeBase<"component-instance"> {
+    componentSetId: string;
+    variantId: string;
+}
+
+export type DesignNode = DesignFrameNode | DesignGroupNode | DesignRectangleNode | DesignTextNode | DesignImageNode | DesignSvgAssetNode | DesignComponentInstanceNode;
 
 export type DesignContainerNode = DesignFrameNode | DesignGroupNode;
 

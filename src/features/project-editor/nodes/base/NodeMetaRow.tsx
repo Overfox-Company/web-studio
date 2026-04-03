@@ -2,21 +2,15 @@
 
 import { Stack, Typography } from "@mui/material";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
+
 export function NodeMetaRow({ label, value }: { label: string; value: string }) {
     return (
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-            <Typography sx={{ fontSize: "0.74rem", color: "#667085", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography sx={projectEditorStyles.nodeMetaRow.label}>
                 {label}
             </Typography>
-            <Typography
-                sx={{
-                    fontSize: "0.8rem",
-                    color: "#111827",
-                    fontWeight: 600,
-                    textAlign: "right",
-                    letterSpacing: "-0.01em",
-                }}
-            >
+            <Typography sx={projectEditorStyles.nodeMetaRow.value}>
                 {value}
             </Typography>
         </Stack>

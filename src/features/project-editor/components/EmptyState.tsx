@@ -3,6 +3,7 @@
 import { Stack, Typography } from "@mui/material";
 import { AddCircleIcon } from "@hugeicons-pro/core-solid-standard";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { ProjectIcon } from "@/src/features/project-editor/components/ui/ProjectIcon";
 
 export function EmptyState() {
@@ -10,28 +11,11 @@ export function EmptyState() {
         <Stack
             spacing={1.2}
             alignItems="center"
-            sx={{
-                pointerEvents: "none",
-                position: "absolute",
-                inset: 0,
-                zIndex: 3,
-                justifyContent: "center",
-            }}
+            sx={projectEditorStyles.emptyState.wrapper}
         >
-            <Stack
-                alignItems="center"
-                spacing={1.25}
-                sx={{
-                    px: 3,
-                    py: 2.5,
-                    borderRadius: "4px",
-                    border: "1px solid rgba(148, 163, 184, 0.24)",
-                    background: "rgba(255,255,255,0.72)",
-                    backdropFilter: "blur(12px)",
-                }}
-            >
-                <ProjectIcon icon={AddCircleIcon} size={22} color="#4f7cff" />
-                <Typography sx={{ fontSize: "0.94rem", fontWeight: 600, color: "#111827", letterSpacing: "-0.02em" }}>
+            <Stack alignItems="center" spacing={1.25} sx={projectEditorStyles.emptyState.card}>
+                <ProjectIcon icon={AddCircleIcon} size={22} color={projectEditorStyles.emptyState.iconColor} />
+                <Typography sx={projectEditorStyles.emptyState.title}>
                     Drag components here to start designing your project architecture
                 </Typography>
             </Stack>

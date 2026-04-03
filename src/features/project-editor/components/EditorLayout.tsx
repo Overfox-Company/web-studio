@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 import { Box, Stack, Typography } from "@mui/material";
 import { ReactFlowProvider } from "@xyflow/react";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { ProjectIcon } from "@/src/features/project-editor/components/ui/ProjectIcon";
 import { useProjectEditorRuntimeStore, useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
 import { EditorPanel, Shell, ToolbarButton } from "@/src/features/project-editor/components/ui/primitives";
@@ -34,6 +35,7 @@ import { NodePalette } from "@/src/features/project-editor/components/NodePalett
 import { useEditorPersistence } from "@/src/features/project-editor/hooks/use-editor-persistence";
 import { useProjectEditorActions } from "@/src/features/project-editor/hooks/use-project-editor-actions";
 import { NodeIcon } from "@/src/features/project-editor/nodes/base/NodeIcon";
+import { useProjectCompile } from "@/src/features/project-compile/use-project-compile";
 import { NODE_VISUALS } from "@/src/features/project-editor/utils/node-colors";
 import type { ProjectNodeKind } from "@/src/features/project-editor/types/editor.types";
 
@@ -41,16 +43,6 @@ const DRAG_PREVIEW_POINTER_OFFSET = {
     x: 36,
     y: 24,
 };
-
-const LEFT_PANEL_WIDTH = {
-    xs: "min(88vw, 304px)",
-    lg: "250px",
-} as const;
-
-const RIGHT_PANEL_WIDTH = {
-    xs: "min(90vw, 360px)",
-    lg: "360px",
-} as const;
 
 function getClientPoint(event: Event | null | undefined) {
     if (!event) {
@@ -91,24 +83,16 @@ function DragPreview({ kind }: { kind: ProjectNodeKind }) {
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            style={{ pointerEvents: "none" }}
+            style={projectEditorStyles.dragPreview.wrapper}
         >
-            <EditorPanel
-                sx={{
-                    p: 1.4,
-                    borderRadius: "6px",
-                    minWidth: 240,
-                    boxShadow: "0 20px 40px rgba(15, 23, 42, 0.12)",
-                    pointerEvents: "none",
-                }}
-            >
+            <EditorPanel sx={projectEditorStyles.dragPreview.panel}>
                 <Stack direction="row" alignItems="center" spacing={1.2}>
                     <NodeIcon kind={kind} />
                     <Stack spacing={0.35}>
-                        <Typography sx={{ fontSize: "0.88rem", fontWeight: 700, color: "#111827" }}>
+                        <Typography sx={projectEditorStyles.dragPreview.title}>
                             {token.label}
                         </Typography>
-                        <Typography sx={{ fontSize: "0.78rem", color: "#667085" }}>
+                        <Typography sx={projectEditorStyles.dragPreview.description}>
                             {token.description}
                         </Typography>
                     </Stack>
@@ -124,6 +108,7 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
     const selectedNodeId = useProjectEditorStore((state) => state.ui.selectedNodeId);
     const dragPreview = useProjectEditorRuntimeStore((state) => state.dragPreview);
     const dragPreviewKind = dragPreview?.node.kind ?? null;
+    const activePaletteKind = dragPreviewKind === "view" ? "page" : dragPreviewKind;
     const isDragPreviewOverCanvas = dragPreview?.isOverCanvas ?? false;
 
     const deleteSelectedNode = useProjectEditorStore((state) => state.deleteSelectedNode);
@@ -131,7 +116,11 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
     const updateDragPreview = useProjectEditorStore((state) => state.updateDragPreview);
     const clearDragPreview = useProjectEditorStore((state) => state.clearDragPreview);
 
-    const { createNode, exportProject } = useProjectEditorActions();
+    const project = useProjectEditorStore((state) => state.project);
+    const { createNode } = useProjectEditorActions();
+    const { compileState, compileMessage, runCompile } = useProjectCompile({
+        getProjectSnapshot: () => project,
+    });
 
     const [isPaletteOpen, setIsPaletteOpen] = useState(true);
     const [isInspectorOpen, setIsInspectorOpen] = useState(true);
@@ -329,91 +318,33 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
                     onDragEnd={handleDragEnd}
                     onDragCancel={handleDragCancel}
                 >
-                    <Box sx={{ minHeight: "100vh", display: "grid", gridTemplateRows: "auto minmax(0, 1fr)" }}>
-                        <EditorTopbar projectId={projectId} onBuild={exportProject} onFitView={() => canvasApiRef.current?.fitView()} />
+                    <Box sx={projectEditorStyles.layout.root}>
+                        <EditorTopbar onCompile={runCompile} onFitView={() => canvasApiRef.current?.fitView()} compileState={compileState} compileMessage={compileMessage} />
 
-                        <Box
-                            sx={{
-                                position: "relative",
-                                minHeight: 0,
-
-                                overflow: "hidden",
-                            }}
-                        >
-                            <Box sx={{ minHeight: 0, height: "100%" }}>
+                        <Box sx={projectEditorStyles.layout.stage}>
+                            <Box sx={projectEditorStyles.layout.canvasFill}>
                                 <CanvasArea registerCanvasApi={registerCanvasApi} />
                             </Box>
 
-                            <Box
-                                sx={{
-                                    position: "absolute",
-                                    top: { xs: 16, lg: 24 },
-                                    left: { xs: 16, lg: 24 },
-                                    bottom: { xs: 16, lg: 24 },
-                                    width: LEFT_PANEL_WIDTH,
-                                    zIndex: 5,
-                                    pointerEvents: "none",
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        height: "100%",
-                                        transform: isPaletteOpen ? "translateX(0)" : "translateX(calc(-100% - 18px))",
-                                        opacity: isPaletteOpen ? 1 : 0,
-                                        transition: "transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease",
-                                        pointerEvents: isPaletteOpen ? "auto" : "none",
-                                    }}
-                                >
-                                    <NodePalette activeKind={dragPreviewKind} />
+                            <Box sx={projectEditorStyles.layout.dock("left")}>
+                                <Box sx={projectEditorStyles.layout.dockPanel(isPaletteOpen, "left")}>
+                                    <NodePalette activeKind={activePaletteKind} />
                                 </Box>
                             </Box>
 
                             <ToolbarButton
                                 variant="outlined"
                                 onClick={() => setIsPaletteOpen((open) => !open)}
-                                sx={{
-                                    position: "absolute",
-                                    top: { xs: 28, lg: 36 },
-                                    left: {
-                                        xs: isPaletteOpen ? "calc(16px + min(88vw, 304px) - 18px)" : "16px",
-                                        lg: isPaletteOpen ? "calc(24px + 296px - 106px)" : "24px",
-                                    },
-                                    minWidth: 40,
-                                    width: 40,
-                                    px: 0,
-                                    zIndex: 6,
-                                    borderRadius: "6px",
-                                    background: "rgba(255,255,255,0.94)",
-                                    //  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
-                                    transition: "left 240ms cubic-bezier(0.22, 1, 0.36, 1)",
-                                }}
+                                sx={projectEditorStyles.layout.paletteToggle(isPaletteOpen)}
                             >
                                 <ProjectIcon icon={isPaletteOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon} size={18} />
                             </ToolbarButton>
 
                             {selectedNodeId ? (
                                 <>
-                                    <Box
-                                        sx={{
-                                            position: "absolute",
-                                            top: { xs: 16, lg: 24 },
-                                            right: { xs: 16, lg: 24 },
-                                            bottom: { xs: 16, lg: 24 },
-                                            width: RIGHT_PANEL_WIDTH,
-                                            zIndex: 5,
-                                            pointerEvents: "none",
-                                        }}
-                                    >
-                                        <Box
-                                            sx={{
-                                                height: "100%",
-                                                transform: isInspectorOpen ? "translateX(0)" : "translateX(calc(100% + 18px))",
-                                                opacity: isInspectorOpen ? 1 : 0,
-                                                transition: "transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease",
-                                                pointerEvents: isInspectorOpen ? "auto" : "none",
-                                            }}
-                                        >
-                                            <Box sx={{ minHeight: 0, height: "100%" }}>
+                                    <Box sx={projectEditorStyles.layout.dock("right")}>
+                                        <Box sx={projectEditorStyles.layout.dockPanel(isInspectorOpen, "right")}>
+                                            <Box sx={projectEditorStyles.layout.canvasFill}>
                                                 <InspectorPanel />
                                             </Box>
                                         </Box>
@@ -422,22 +353,7 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
                                     <ToolbarButton
                                         variant="outlined"
                                         onClick={() => setIsInspectorOpen((open) => !open)}
-                                        sx={{
-                                            position: "absolute",
-                                            top: { xs: 28, lg: 36 },
-                                            right: {
-                                                xs: isInspectorOpen ? "calc(16px + min(90vw, 360px) - 18px)" : "16px",
-                                                lg: isInspectorOpen ? "calc(24px + 360px - 54px)" : "24px",
-                                            },
-                                            minWidth: 40,
-                                            width: 40,
-                                            px: 0,
-                                            zIndex: 6,
-                                            borderRadius: "6px",
-                                            background: "rgba(255,255,255,0.94)",
-                                            //   boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
-                                            transition: "right 240ms cubic-bezier(0.22, 1, 0.36, 1)",
-                                        }}
+                                        sx={projectEditorStyles.layout.inspectorToggle(isInspectorOpen)}
                                     >
                                         <ProjectIcon icon={isInspectorOpen ? PanelRightCloseIcon : PanelRightOpenIcon} size={18} />
                                     </ToolbarButton>
@@ -452,7 +368,7 @@ export function EditorLayout({ projectId, initialName }: { projectId: string; in
                             easing: "cubic-bezier(0.22, 1, 0.36, 1)",
                         }}
                     >
-                        {dragPreviewKind && !isDragPreviewOverCanvas ? <DragPreview kind={dragPreviewKind} /> : null}
+                        {activePaletteKind && !isDragPreviewOverCanvas ? <DragPreview kind={activePaletteKind} /> : null}
                     </DragOverlay>
                 </DndContext>
             </ReactFlowProvider>

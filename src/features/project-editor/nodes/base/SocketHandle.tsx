@@ -6,6 +6,7 @@ import { useCallback, useMemo } from "react";
 import { Handle, Position, useConnection, type Connection } from "@xyflow/react";
 import { Box, Stack, Typography } from "@mui/material";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { useProjectEditorRuntimeStore, useProjectEditorStore } from "@/src/features/project-editor/store/editor.store";
 import type { ProjectNode } from "@/src/features/project-editor/types/editor.types";
 import { canConnect } from "@/src/features/project-editor/utils/can-connect";
@@ -69,29 +70,7 @@ export function SocketHandle({ node, socket, preview = false }: SocketHandleProp
         return validation.allowed ? "compatible" : "dimmed";
     }, [activeSource, edges, handleId, node.id, nodes, socket.side]);
 
-    const isHighlighted = compatibilityState === "source" || compatibilityState === "compatible";
-    const alignment = socket.side === "input" ? "flex-start" : "flex-end";
-
-    const handleStyle = {
-        top: "50%",
-        left: socket.side === "input" ? 0 : undefined,
-        right: socket.side === "output" ? 0 : undefined,
-        transform: socket.side === "input" ? "translate(-55%, -50%)" : "translate(55%, -50%)",
-        background: socket.color,
-        borderColor: "rgba(255, 255, 255, 0.96)",
-        boxShadow: `0 0 0 1px ${socket.color}26`,
-        "--socket-color": socket.color,
-    } as CSSProperties;
-
-    const staticHandleStyle = {
-        width: 12,
-        height: 12,
-        borderRadius: 999,
-        background: socket.color,
-        border: "2px solid rgba(255, 255, 255, 0.96)",
-        boxShadow: `0 0 0 1px ${socket.color}26`,
-        flexShrink: 0,
-    } as const;
+    const handleStyle = projectEditorStyles.socket.flowHandle(socket.color, socket.side) as CSSProperties;
 
     const isValidConnection = useCallback(
         (connection: Connection | { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) => {
@@ -128,25 +107,11 @@ export function SocketHandle({ node, socket, preview = false }: SocketHandleProp
             title={socket.description ? `${socket.label}: ${socket.description}` : socket.label}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            sx={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: alignment,
-                gap: 0.75,
-                minHeight: 34,
-                px: 1,
-                py: 0.45,
-                borderRadius: "12px",
-                backgroundColor: isHighlighted ? "rgba(255, 255, 255, 0.94)" : "rgba(255, 255, 255, 0.7)",
-                boxShadow: isHighlighted ? `0 0 0 1px ${socket.color}22` : "none",
-                opacity: compatibilityState === "dimmed" ? 0.42 : 1,
-                transition: "opacity 140ms ease, box-shadow 140ms ease, background-color 140ms ease",
-            }}
+            sx={projectEditorStyles.socket.container(socket.color, compatibilityState, socket.side)}
         >
             {socket.side === "input" ? (
                 preview ? (
-                    <Box component="span" sx={staticHandleStyle} />
+                    <Box component="span" sx={projectEditorStyles.socket.staticHandle(socket.color)} />
                 ) : (
                     <Handle
                         id={handleId}
@@ -163,37 +128,19 @@ export function SocketHandle({ node, socket, preview = false }: SocketHandleProp
                 )
             ) : null}
 
-            <Stack spacing={0.15} sx={{ alignItems: alignment, minWidth: 0 }}>
-                <Typography
-                    sx={{
-                        fontSize: "0.74rem",
-                        fontWeight: 700,
-                        lineHeight: 1.1,
-                        color: compatibilityState === "dimmed" ? "rgba(51, 65, 85, 0.55)" : "#334155",
-                        textAlign: socket.side === "input" ? "left" : "right",
-                    }}
-                >
+            <Stack spacing={0.15} sx={projectEditorStyles.socket.labelStack(socket.side)}>
+                <Typography sx={projectEditorStyles.socket.label(compatibilityState, socket.side)}>
                     {socket.label}
                     {socket.required ? " *" : ""}
                 </Typography>
-                <Typography
-                    sx={{
-                        fontSize: "0.62rem",
-                        fontWeight: 700,
-                        lineHeight: 1.1,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: socket.color,
-                        textAlign: socket.side === "input" ? "left" : "right",
-                    }}
-                >
+                <Typography sx={projectEditorStyles.socket.type(socket.color, socket.side)}>
                     {socket.socketType}
                 </Typography>
             </Stack>
 
             {socket.side === "output" ? (
                 preview ? (
-                    <Box component="span" sx={staticHandleStyle} />
+                    <Box component="span" sx={projectEditorStyles.socket.staticHandle(socket.color)} />
                 ) : (
                     <Handle
                         id={handleId}

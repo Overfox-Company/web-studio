@@ -39,6 +39,16 @@ export const designImageStyleSchema = z.object({
     objectFit: z.enum(DESIGN_IMAGE_OBJECT_FITS),
 });
 
+export const designImportDiagnosticsSchema = z.object({
+    source: z.string().min(1),
+    warnings: z.array(z.string()),
+    metaJson: z.string().nullable(),
+    rawHtml: z.string().nullable(),
+    figmetaBase64: z.string().nullable(),
+    figmaBase64: z.string().nullable(),
+    decoder: z.string().nullable(),
+});
+
 export const designAutoLayoutSchema = z.object({
     direction: z.enum(DESIGN_AUTO_LAYOUT_DIRECTIONS).default("vertical"),
     justifyContent: z.enum(DESIGN_AUTO_LAYOUT_JUSTIFY).default("start"),
@@ -115,12 +125,27 @@ export const designImageNodeSchema = designNodeBaseSchema.extend({
     src: z.string().min(1),
 });
 
+export const designSvgAssetNodeSchema = designNodeBaseSchema.extend({
+    type: z.literal(DESIGN_NODE_TYPES[5]),
+    svgMarkup: z.string().min(1),
+    viewBox: z.string().nullable(),
+    diagnostics: designImportDiagnosticsSchema.nullable().optional(),
+});
+
+export const designComponentInstanceNodeSchema = designNodeBaseSchema.extend({
+    type: z.literal(DESIGN_NODE_TYPES[6]),
+    componentSetId: z.string().min(1),
+    variantId: z.string().min(1),
+});
+
 export const designNodeSchema = z.discriminatedUnion("type", [
     designFrameNodeSchema,
     designGroupNodeSchema,
     designRectangleNodeSchema,
     designTextNodeSchema,
     designImageNodeSchema,
+    designSvgAssetNodeSchema,
+    designComponentInstanceNodeSchema,
 ]);
 
 export const designDocumentSchema = z.object({

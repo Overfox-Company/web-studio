@@ -6,7 +6,7 @@ import { createSocketHandleId, type NodeSocket } from "@/src/features/project-ed
 type NodeSocketConfig = Omit<NodeSocket, "color">;
 
 const NODE_SOCKET_CONFIGS: Record<ProjectNodeKind, NodeSocketConfig[]> = {
-    view: [
+    page: [
         {
             id: "data",
             label: "Data",

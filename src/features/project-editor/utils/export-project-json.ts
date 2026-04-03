@@ -5,12 +5,14 @@ import type {
     ApiNode,
     DatabaseNode,
     ExportedProjectSpec,
+    LegacyViewNode,
+    PageNode,
     ProjectEditorState,
-    ViewNode,
 } from "@/src/features/project-editor/types/editor.types";
 
 export function exportProjectJson(state: ProjectEditorState): ExportedProjectSpec {
-    const views = state.nodes.filter((node): node is ViewNode => node.kind === "view");
+    const pages = state.nodes.filter((node): node is PageNode => node.kind === "page");
+    const legacyViews = state.nodes.filter((node): node is LegacyViewNode => node.kind === "view");
     const apis = state.nodes.filter((node): node is ApiNode => node.kind === "api");
     const databases = state.nodes.filter((node): node is DatabaseNode => node.kind === "database");
     const actions = state.nodes.filter((node): node is ActionNode => node.kind === "action");
@@ -35,7 +37,8 @@ export function exportProjectJson(state: ProjectEditorState): ExportedProjectSpe
             databases,
             apis,
             actions,
-            views,
+            pages,
+            legacyViews,
         },
     });
 }

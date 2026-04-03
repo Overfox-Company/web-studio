@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import { Box } from "@mui/material";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { EmptyState } from "@/src/features/project-editor/components/EmptyState";
 import { EditorPanel } from "@/src/features/project-editor/components/ui/primitives";
 import { ActionNode } from "@/src/features/project-editor/nodes/action/ActionNode";
@@ -34,7 +35,7 @@ import { canConnectFlow } from "@/src/features/project-editor/utils/can-connect"
 import { buildProjectFlowEdges } from "@/src/features/project-editor/utils/flow-edges";
 
 const nodeTypes = {
-    view: ViewNode,
+    page: ViewNode,
     api: ApiNode,
     database: DatabaseNode,
     action: ActionNode,
@@ -58,9 +59,11 @@ function createFlowNode(
     selected: boolean,
     isPreview = false,
 ): ProjectFlowNode {
+    const flowType = node.kind === "view" ? "page" : node.kind;
+
     return {
         id: node.id,
-        type: node.kind,
+        type: flowType,
         position,
         data: isPreview ? { node, isPreview: true } : { node },
         selected,
@@ -68,13 +71,7 @@ function createFlowNode(
         deletable: !isPreview,
         selectable: !isPreview,
         focusable: !isPreview,
-        style: isPreview
-            ? {
-                pointerEvents: "none",
-                opacity: 0.82,
-                filter: "saturate(0.98)",
-            }
-            : undefined,
+        style: isPreview ? projectEditorStyles.canvas.previewNode : undefined,
     };
 }
 
@@ -238,21 +235,13 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
     }
 
     return (
-        <EditorPanel sx={{ height: "100%", }}>
+        <EditorPanel sx={projectEditorStyles.canvas.panel}>
             <Box
                 ref={(element: HTMLDivElement | null) => {
                     canvasSurfaceRef.current = element;
                     setNodeRef(element);
                 }}
-                sx={{
-                    position: "relative",
-                    height: "100%",
-                    overflow: "hidden",
-                    border: `1px solid ${hasPreviewNode || isOver ? "rgba(79, 124, 255, 0.4)" : "rgba(148, 163, 184, 0.18)"}`,
-                    backgroundColor: hasPreviewNode || isOver ? "rgba(79, 124, 255, 0.04)" : "transparent",
-                    //   boxShadow: hasPreviewNode || isOver ? "0 0 0 3px rgba(79, 124, 255, 0.08)" : "none",
-                    transition: "border-color 180ms ease, box-shadow 180ms ease, background 180ms ease",
-                }}
+                sx={projectEditorStyles.canvas.surface(hasPreviewNode || isOver)}
             >
                 {!hasPersistedNodes && !hasPreviewNode ? <EmptyState /> : null}
 
@@ -279,10 +268,7 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
                     selectionOnDrag={false}
                     deleteKeyCode={null}
                     panOnDrag={isPaletteDragActive ? false : [0, 1]}
-                    connectionLineStyle={{
-                        stroke: "rgba(71, 85, 105, 0.76)",
-                        strokeWidth: 1.8,
-                    }}
+                    connectionLineStyle={projectEditorStyles.canvas.connectionLine}
                     defaultEdgeOptions={{
                         type: "smoothstep",
                         className: "project-flow-edge",
@@ -290,7 +276,11 @@ export function CanvasArea({ registerCanvasApi }: CanvasAreaProps) {
                     zoomOnDoubleClick={false}
                     proOptions={{ hideAttribution: true }}
                 >
-                    <Background color="rgba(77, 77, 94, 0.39)" gap={18} size={2.5} />
+                    <Background
+                        color={projectEditorStyles.canvas.backgroundColor}
+                        gap={projectEditorStyles.canvas.backgroundGap}
+                        size={projectEditorStyles.canvas.backgroundSize}
+                    />
                     <Controls showInteractive={true} position="bottom-right" />
                 </ReactFlow>
             </Box>

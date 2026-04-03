@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { createDefaultDesignDocument } from "@/src/features/design-editor/utils/create-design-document";
 import { projectNodeSchema } from "@/src/features/project-editor/schema/node.schema";
 import type { ProjectNode, ProjectNodeKind } from "@/src/features/project-editor/types/editor.types";
+import { slugifyProjectPageName } from "@/src/features/project-editor/utils/page-nodes";
 
 function createBaseNode(kind: ProjectNodeKind, name: string, description: string, position: { x: number; y: number }) {
     const timestamp = new Date().toISOString();
@@ -20,15 +21,15 @@ function createBaseNode(kind: ProjectNodeKind, name: string, description: string
 
 export function createNodeDefaults(kind: ProjectNodeKind, position: { x: number; y: number }): ProjectNode {
     switch (kind) {
-        case "view":
-            const baseNode = createBaseNode(kind, "Dashboard View", "Main surface for a user-facing route.", position);
+        case "page":
+            const baseNode = createBaseNode(kind, "Home Page", "Exportable page and visual entry point.", position);
 
             return projectNodeSchema.parse({
                 ...baseNode,
                 data: {
-                    route: "/dashboard",
-                    renderMode: "SSR",
-                    layout: "main-shell",
+                    slug: slugifyProjectPageName(baseNode.name),
+                    index: false,
+                    viewportMode: "desktop",
                     designDocument: createDefaultDesignDocument({
                         viewNodeId: baseNode.id,
                         viewName: baseNode.name,

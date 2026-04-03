@@ -1,3 +1,4 @@
+import { designEditorDefaults } from "@/src/customization/design-editor";
 import { designDocumentSchema } from "@/src/features/design-editor/schema/design.schema";
 import type { DesignDocumentSnapshot, DesignFrameNode } from "@/src/features/design-editor/types/design.types";
 
@@ -46,18 +47,12 @@ function createRootFrame(viewNodeId: string, viewName: string): DesignFrameNode 
             },
         },
         style: {
-            fill: "#f8fafc",
-            stroke: "rgba(148, 163, 184, 0.35)",
+            fill: designEditorDefaults.fills.root,
+            stroke: designEditorDefaults.strokes.root,
             strokeWidth: 1,
             borderRadius: 24,
             opacity: 1,
-            shadow: {
-                x: 0,
-                y: 24,
-                blur: 72,
-                spread: -24,
-                color: "rgba(15, 23, 42, 0.22)",
-            },
+            shadow: designEditorDefaults.shadows.root,
         },
     };
 }

@@ -1,6 +1,8 @@
 import { nanoid } from "nanoid";
 
+import { designEditorDefaults } from "@/src/customization/design-editor";
 import type {
+    DesignComponentInstanceNode,
     DesignAutoLayout,
     DesignFrameNode,
     DesignGroupNode,
@@ -62,18 +64,12 @@ function createFrameNode(parentId: string, frame: DesignFrame): DesignFrameNode 
         layoutMode: "absolute",
         autoLayout: createDefaultAutoLayout(),
         style: {
-            fill: "#ffffff",
-            stroke: "rgba(148, 163, 184, 0.32)",
+            fill: designEditorDefaults.fills.frame,
+            stroke: designEditorDefaults.strokes.frame,
             strokeWidth: 1,
             borderRadius: 20,
             opacity: 1,
-            shadow: {
-                x: 0,
-                y: 18,
-                blur: 40,
-                spread: -18,
-                color: "rgba(15, 23, 42, 0.16)",
-            },
+            shadow: designEditorDefaults.shadows.frame,
         },
     };
 }
@@ -84,8 +80,8 @@ function createRectangleNode(parentId: string, frame: DesignFrame): DesignRectan
         type: "rectangle",
         name: "Rectangle",
         style: {
-            fill: "#7dd3fc",
-            stroke: "rgba(15, 23, 42, 0.18)",
+            fill: designEditorDefaults.fills.rectangle,
+            stroke: designEditorDefaults.strokes.rectangle,
             strokeWidth: 1,
             borderRadius: 16,
             opacity: 1,
@@ -101,19 +97,19 @@ function createTextNode(parentId: string, frame: DesignFrame): DesignTextNode {
         name: "Text",
         text: "Text",
         style: {
-            fill: "transparent",
+            fill: designEditorDefaults.fills.transparent,
             stroke: null,
             strokeWidth: 0,
             borderRadius: 0,
             opacity: 1,
             shadow: null,
             typography: {
-                fontFamily: "var(--font-ibm-plex-sans)",
+                fontFamily: designEditorDefaults.typography.fontFamily,
                 fontSize: 32,
                 fontWeight: 600,
                 lineHeight: 1.2,
-                textAlign: "left",
-                color: "#0f172a",
+                textAlign: designEditorDefaults.typography.textAlign,
+                color: designEditorDefaults.typography.color,
             },
         },
     };
@@ -124,22 +120,16 @@ function createImageNode(parentId: string, frame: DesignFrame): DesignImageNode 
         ...createBaseNode(parentId, frame),
         type: "image",
         name: "Image",
-        src: "placeholder://image",
+        src: designEditorDefaults.imageSource,
         style: {
-            fill: "linear-gradient(135deg, #0f172a 0%, #334155 100%)",
-            stroke: "rgba(255, 255, 255, 0.16)",
+            fill: designEditorDefaults.fills.image,
+            stroke: designEditorDefaults.strokes.image,
             strokeWidth: 1,
             borderRadius: 24,
             opacity: 1,
-            shadow: {
-                x: 0,
-                y: 18,
-                blur: 36,
-                spread: -18,
-                color: "rgba(15, 23, 42, 0.35)",
-            },
+            shadow: designEditorDefaults.shadows.image,
             image: {
-                src: "placeholder://image",
+                src: designEditorDefaults.imageSource,
                 objectFit: "cover",
             },
         },
@@ -152,10 +142,34 @@ export function createDesignGroupNode(parentId: string, frame: DesignFrame): Des
         type: "group",
         name: "Group",
         style: {
-            fill: "transparent",
+            fill: designEditorDefaults.fills.transparent,
             stroke: null,
             strokeWidth: 0,
             borderRadius: 0,
+            opacity: 1,
+            shadow: null,
+        },
+    };
+}
+
+export function createComponentInstanceNode(params: {
+    parentId: string;
+    frame: DesignFrame;
+    componentSetId: string;
+    variantId: string;
+    name: string;
+}): DesignComponentInstanceNode {
+    return {
+        ...createBaseNode(params.parentId, params.frame),
+        type: "component-instance",
+        name: params.name,
+        componentSetId: params.componentSetId,
+        variantId: params.variantId,
+        style: {
+            fill: designEditorDefaults.fills.transparent,
+            stroke: designEditorDefaults.strokes.frame,
+            strokeWidth: 1,
+            borderRadius: 20,
             opacity: 1,
             shadow: null,
         },

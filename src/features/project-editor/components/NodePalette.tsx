@@ -6,12 +6,11 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Box, Stack, Typography } from "@mui/material";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import {
     EditorPanel,
     EditorSection,
-    EditorSectionHint,
     EditorSectionTitle,
-    PanelEyebrow,
     PanelHeader,
     TextField,
 } from "@/src/features/project-editor/components/ui/primitives";
@@ -32,34 +31,14 @@ function PaletteItem({ kind, activeKind }: { kind: ProjectNodeKind; activeKind: 
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            sx={{
-                borderRadius: "12px",
-                border: `1px solid ${activeKind === kind ? token.accent : "rgb(219, 222, 230)"}`,
-                background: isDragging ? "rgba(255,255,255,0.96)" : "rgba(235, 239, 246, 0)",
-                p: 1,
-                overflow: "hidden",
-                cursor: "grab",
-                opacity: isDragging ? 0.72 : 1,
-                transform: CSS.Translate.toString(transform),
-                boxShadow: activeKind === kind ? `0 12px 24px ${token.accent}12` : "none",
-                transition: "border-color 180ms ease, transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
-                willChange: "transform",
-            }}
+            sx={projectEditorStyles.nodePalette.item(token.accent, activeKind === kind, isDragging, CSS.Translate.toString(transform))}
         >
             <Stack direction="row" spacing={1.25} alignItems="center">
                 <NodeIcon kind={kind} />
                 <Box minWidth={0}>
-                    <Typography sx={{
-                        fontSize: "0.92rem",
-                        fontWeight: 700,
-                        color: "#111827",
-                        letterSpacing: "-0.02em"
-                    }}>
+                    <Typography sx={projectEditorStyles.nodePalette.itemTitle}>
                         {token.label}
                     </Typography>
-                    {/* <Typography sx={{ fontSize: "0.82rem", color: "#667085", lineHeight: 1.55 }}>
-                        {token.description}
-                    </Typography>*/}
                 </Box>
             </Stack>
         </Box>
@@ -83,8 +62,8 @@ export function NodePalette({ activeKind }: { activeKind: ProjectNodeKind | null
     }, [searchQuery]);
 
     return (
-        <EditorPanel sx={{ height: "100%", p: 2.25 }} elevation={0}>
-            <EditorSection sx={{ height: "100%" }}>
+        <EditorPanel sx={projectEditorStyles.nodePalette.panel} elevation={0}>
+            <EditorSection sx={projectEditorStyles.nodePalette.section}>
                 <PanelHeader>
                     <EditorSectionTitle>Architecture library</EditorSectionTitle>
                 </PanelHeader>
@@ -95,7 +74,7 @@ export function NodePalette({ activeKind }: { activeKind: ProjectNodeKind | null
                     placeholder="Search nodes"
                 />
 
-                <Stack spacing={1.15} sx={{ overflowY: "auto", pr: 0.5 }}>
+                <Stack spacing={1.15} sx={projectEditorStyles.nodePalette.list}>
                     {items.map((item) => (
                         <PaletteItem key={item.kind} kind={item.kind} activeKind={activeKind} />
                     ))}

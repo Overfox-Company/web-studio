@@ -15,6 +15,7 @@ import {
 } from "@xyflow/react";
 import { Box } from "@mui/material";
 
+import { projectEditorStyles } from "@/src/customization/project-editor";
 import { Shell, EditorPanel } from "@/src/features/project-editor/components/ui/primitives";
 import { ActionNode } from "@/src/features/project-editor/nodes/action/ActionNode";
 import { ApiNode } from "@/src/features/project-editor/nodes/api/ApiNode";
@@ -25,7 +26,7 @@ import { canConnectFlow } from "@/src/features/project-editor/utils/can-connect"
 import { buildProjectFlowEdges, createProjectFlowEdge } from "@/src/features/project-editor/utils/flow-edges";
 
 const nodeTypes = {
-    view: ViewNode,
+    page: ViewNode,
     api: ApiNode,
     database: DatabaseNode,
     action: ActionNode,
@@ -34,9 +35,11 @@ const nodeTypes = {
 const MOCK_TIMESTAMP = "2026-04-02T00:00:00.000Z";
 
 function createMockDomainNode(node: ProjectNode): ProjectFlowNode {
+    const flowType = node.kind === "view" ? "page" : node.kind;
+
     return {
         id: node.id,
-        type: node.kind,
+        type: flowType,
         position: node.position,
         data: { node },
     };
@@ -296,18 +299,8 @@ function CanvasLabScene() {
     );
 
     return (
-        <EditorPanel sx={{ height: "100%", p: 1.25 }}>
-            <Box
-                sx={{
-                    position: "relative",
-                    height: "100%",
-                    borderRadius: "6px",
-                    overflow: "hidden",
-                    border: "1px solid rgba(148, 163, 184, 0.18)",
-                    background:
-                        "radial-gradient(circle at top left, rgba(79, 124, 255, 0.06), transparent 24%), linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
-                }}
-            >
+        <EditorPanel sx={projectEditorStyles.standalone.scenePanel}>
+            <Box sx={projectEditorStyles.standalone.sceneSurface}>
                 <ReactFlow<ProjectFlowNode>
                     nodes={nodes}
                     edges={edges}
@@ -326,17 +319,18 @@ function CanvasLabScene() {
                     elementsSelectable
                     panOnDrag={[1, 2]}
                     zoomOnDoubleClick={false}
-                    connectionLineStyle={{
-                        stroke: "rgba(71, 85, 105, 0.76)",
-                        strokeWidth: 1.8,
-                    }}
+                    connectionLineStyle={projectEditorStyles.canvas.connectionLine}
                     defaultEdgeOptions={{
                         type: "smoothstep",
                         className: "project-flow-edge",
                     }}
                     proOptions={{ hideAttribution: true }}
                 >
-                    <Background color="rgba(148, 163, 184, 0.18)" gap={18} size={1.1} />
+                    <Background
+                        color={projectEditorStyles.canvas.labBackgroundColor}
+                        gap={projectEditorStyles.canvas.labBackgroundGap}
+                        size={projectEditorStyles.canvas.labBackgroundSize}
+                    />
                     <Controls showInteractive={false} position="bottom-right" />
                 </ReactFlow>
             </Box>
@@ -347,8 +341,8 @@ function CanvasLabScene() {
 export function StandaloneCanvasLab() {
     return (
         <Shell>
-            <Box sx={{ minHeight: "100vh", p: { xs: 2, lg: 3 } }}>
-                <Box sx={{ height: "calc(100vh - 48px)" }}>
+            <Box sx={projectEditorStyles.standalone.shellPadding}>
+                <Box sx={projectEditorStyles.standalone.shellFrame}>
                     <ReactFlowProvider>
                         <CanvasLabScene />
                     </ReactFlowProvider>

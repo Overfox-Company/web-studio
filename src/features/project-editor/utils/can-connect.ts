@@ -1,6 +1,7 @@
 import type { Connection } from "@xyflow/react";
 
 import type { ProjectEdge, ProjectNode } from "@/src/features/project-editor/types/editor.types";
+import { resolveProjectNodeKind } from "@/src/features/project-editor/utils/page-nodes";
 import { validateConnection } from "@/src/features/project-editor/utils/connection-policy";
 import { getNodeSocket } from "@/src/features/project-editor/utils/node-sockets";
 import { createSocketHandleId, type ConnectionValidationResult, type NodeSocket } from "@/src/features/project-editor/utils/socket-types";
@@ -82,8 +83,10 @@ export function canConnect(params: {
         };
     }
 
-    const sourceSocket = getNodeSocket(sourceNode.kind, sourceHandleId);
-    const targetSocket = getNodeSocket(targetNode.kind, targetHandleId);
+    const sourceKind = resolveProjectNodeKind(sourceNode.kind);
+    const targetKind = resolveProjectNodeKind(targetNode.kind);
+    const sourceSocket = getNodeSocket(sourceKind, sourceHandleId);
+    const targetSocket = getNodeSocket(targetKind, targetHandleId);
 
     if (!sourceSocket || !targetSocket) {
         return {
@@ -141,8 +144,8 @@ export function canConnect(params: {
     }
 
     const structuralValidation = validateConnection({
-        sourceNodeKind: sourceNode.kind,
-        targetNodeKind: targetNode.kind,
+        sourceNodeKind: sourceKind,
+        targetNodeKind: targetKind,
         sourceSocketType: sourceSocket.socketType,
         targetSocketType: targetSocket.socketType,
         sourceSocketSide: sourceSocket.side,

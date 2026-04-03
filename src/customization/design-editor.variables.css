@@ -1,0 +1,88 @@
+:root {
+    --ws-design-shell-background: var(--ws-project-shell-background);
+    --ws-design-loading-background: var(--ws-project-shell-background);
+    --ws-design-loading-surface: rgba(255, 255, 255, 0.9);
+    --ws-design-panel-background: rgba(255, 255, 255, 0.78);
+    --ws-design-panel-surface: rgba(255, 255, 255, 0.9);
+    --ws-design-panel-surface-strong: rgba(255, 255, 255, 0.96);
+
+    --ws-design-panel-border: var(--ws-project-panel-border);
+    --ws-design-panel-border-strong: var(--ws-border-strong);
+    --ws-design-panel-header-border: rgba(148, 163, 184, 0.14);
+    --ws-design-canvas-divider: rgba(148, 163, 184, 0.16);
+    --ws-design-topbar-border: var(--ws-project-topbar-border);
+    --ws-design-toolbar-divider: rgba(148, 163, 184, 0.16);
+    --ws-design-topbar-button-border: var(--ws-project-status-border);
+    --ws-design-topbar-zoom-border: var(--ws-project-status-border);
+
+    --ws-design-topbar-background: var(--ws-project-topbar-background);
+    --ws-design-topbar-button-background: rgba(255, 255, 255, 0.94);
+    --ws-design-topbar-button-background-strong: rgba(255, 255, 255, 0.96);
+    --ws-design-status-background: var(--ws-project-status-background);
+    --ws-design-status-border: var(--ws-project-status-border);
+    --ws-design-status-text: var(--ws-project-status-text);
+    --ws-design-status-error: #c2410c;
+
+    --ws-design-toolbar-group-background: rgba(248, 250, 252, 0.82);
+    --ws-design-toolbar-group-border: rgba(148, 163, 184, 0.18);
+    --ws-design-toolbar-button-text: #475467;
+    --ws-design-toolbar-button-active-background: #e2e8f0;
+    --ws-design-toolbar-button-active-text: #0f172a;
+    --ws-design-toolbar-button-active-shortcut: #334155;
+    --ws-design-toolbar-button-shortcut: #64748b;
+    --ws-design-toolbar-button-hover: rgba(148, 163, 184, 0.12);
+
+    --ws-design-title-text: var(--ws-text-primary);
+    --ws-design-body-text: #475467;
+    --ws-design-muted-text: var(--ws-text-secondary);
+    --ws-design-subtle-text: var(--ws-text-muted);
+    --ws-design-accent-text: var(--ws-project-node-view-accent);
+
+    --ws-design-canvas-background:
+        radial-gradient(circle at top left, rgba(79, 124, 255, 0.08), transparent 26%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+    --ws-design-canvas-grid: rgba(148, 163, 184, 0.14);
+    --ws-design-overlay-chip-background: rgba(255, 255, 255, 0.92);
+    --ws-design-overlay-chip-background-strong: rgba(255, 255, 255, 0.96);
+    --ws-design-overlay-chip-text: var(--ws-text-strong);
+    --ws-design-auto-badge-background: var(--ws-project-node-view-accent-soft);
+    --ws-design-overlay-handle-fill: var(--ws-project-node-view-accent);
+    --ws-design-overlay-handle-border: rgba(255, 255, 255, 0.96);
+    --ws-design-selection-outline: rgba(79, 124, 255, 0.92);
+    --ws-design-selection-outline-hover: rgba(79, 124, 255, 0.36);
+    --ws-design-selection-outline-soft: rgba(79, 124, 255, 0.22);
+    --ws-design-editing-overlay-background: rgba(79, 124, 255, 0.06);
+    --ws-design-text-editor-background: rgba(255, 255, 255, 0.96);
+    --ws-design-overlay-preview-fill: rgba(79, 124, 255, 0.14);
+    --ws-design-overlay-preview-text-fill: rgba(79, 124, 255, 0.1);
+    --ws-design-overlay-preview-border: rgba(79, 124, 255, 0.78);
+    --ws-design-overlay-preview-image:
+        linear-gradient(135deg, rgba(79, 124, 255, 0.18), rgba(79, 124, 255, 0.04));
+    --ws-design-paste-feedback-background: rgba(255, 255, 255, 0.96);
+    --ws-design-paste-feedback-background-error: rgba(254, 242, 242, 0.96);
+    --ws-design-paste-feedback-border: rgba(79, 124, 255, 0.24);
+    --ws-design-paste-feedback-border-error: rgba(239, 68, 68, 0.22);
+    --ws-design-paste-feedback-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    --ws-design-guide-node: rgba(79, 124, 255, 0.92);
+    --ws-design-guide-container: rgba(255, 255, 255, 0.94);
+    --ws-design-guide-outline: rgba(15, 23, 42, 0.16);
+    --ws-design-insertion-indicator: rgba(79, 124, 255, 0.92);
+
+    --ws-design-field-background: rgba(255, 255, 255, 0.96);
+    --ws-design-field-border: rgba(148, 163, 184, 0.2);
+    --ws-design-field-text: var(--ws-text-primary);
+
+    --ws-design-layer-selected-background: rgba(79, 124, 255, 0.12);
+    --ws-design-layer-selected-border: rgba(79, 124, 255, 0.28);
+    --ws-design-layer-hover-background: rgba(148, 163, 184, 0.08);
+
+    --ws-design-image-placeholder-background:
+        linear-gradient(135deg, rgba(240, 244, 249, 0.98) 0%, rgba(228, 234, 242, 0.98) 100%),
+        radial-gradient(circle at top left, rgba(79, 124, 255, 0.12), transparent 48%);
+
+    --ws-preview-background: var(--ws-project-shell-background);
+    --ws-preview-empty-background: var(--ws-project-shell-background);
+    --ws-preview-empty-surface: rgba(255, 255, 255, 0.94);
+    --ws-preview-empty-border: rgba(148, 163, 184, 0.2);
+    --ws-preview-empty-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+}
