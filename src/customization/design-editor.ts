@@ -1,12 +1,85 @@
+import { projectEditorTokens } from "@/src/customization/project-editor";
 import { sharedCustomization } from "@/src/customization/shared";
 import type { DesignFrame, DesignResizeHandle } from "@/src/features/design-editor/types/interaction.types";
 
 type SaveState = "saved" | "saving" | "error";
 type FeedbackTone = "info" | "error";
 
+const designEditorTokens = {
+    shellBackground: projectEditorTokens.shellBackground,
+    loadingBackground: projectEditorTokens.shellBackground,
+    loadingSurface: "rgba(255, 255, 255, 0.9)",
+    panelBackground: "rgba(255, 255, 255, 0.78)",
+    panelSurface: "rgba(255, 255, 255, 0.9)",
+    panelBorder: projectEditorTokens.panelBorder,
+    panelBorderStrong: sharedCustomization.border.strong,
+    panelHeaderBorder: "rgba(148, 163, 184, 0.14)",
+    canvasDivider: "rgba(148, 163, 184, 0.16)",
+    topbarBorder: projectEditorTokens.topbarBorder,
+    toolbarDivider: "rgba(148, 163, 184, 0.16)",
+    topbarButtonBorder: projectEditorTokens.statusBorder,
+    topbarZoomBorder: projectEditorTokens.statusBorder,
+    topbarBackground: projectEditorTokens.topbarBackground,
+    topbarButtonBackground: "rgba(255, 255, 255, 0.94)",
+    topbarButtonBackgroundStrong: "rgba(255, 255, 255, 0.96)",
+    statusBackground: projectEditorTokens.statusBackground,
+    statusBorder: projectEditorTokens.statusBorder,
+    statusText: projectEditorTokens.statusText,
+    statusError: "#c2410c",
+    toolbarGroupBackground: "rgba(248, 250, 252, 0.82)",
+    toolbarGroupBorder: "rgba(148, 163, 184, 0.18)",
+    toolbarButtonText: "#475467",
+    toolbarButtonActiveBackground: "#e2e8f0",
+    toolbarButtonActiveText: "#0f172a",
+    toolbarButtonActiveShortcut: "#334155",
+    toolbarButtonShortcut: "#64748b",
+    toolbarButtonHover: "rgba(148, 163, 184, 0.12)",
+    titleText: sharedCustomization.text.primary,
+    bodyText: "#475467",
+    accentText: projectEditorTokens.nodeViewAccent,
+    canvasBackground: "radial-gradient(circle at top left, rgba(79, 124, 255, 0.08), transparent 26%), linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%)",
+    canvasGrid: "rgba(148, 163, 184, 0.14)",
+    overlayChipBackground: "rgba(255, 255, 255, 0.92)",
+    overlayChipBackgroundStrong: "rgba(255, 255, 255, 0.96)",
+    overlayChipText: sharedCustomization.text.strong,
+    autoBadgeBackground: projectEditorTokens.nodeViewAccentSoft,
+    overlayHandleFill: projectEditorTokens.nodeViewAccent,
+    overlayHandleBorder: "rgba(255, 255, 255, 0.96)",
+    selectionOutline: "rgba(79, 124, 255, 0.92)",
+    selectionOutlineHover: "rgba(79, 124, 255, 0.36)",
+    selectionOutlineSoft: "rgba(79, 124, 255, 0.22)",
+    editingOverlayBackground: "rgba(79, 124, 255, 0.06)",
+    textEditorBackground: "rgba(255, 255, 255, 0.96)",
+    overlayPreviewFill: "rgba(79, 124, 255, 0.14)",
+    overlayPreviewTextFill: "rgba(79, 124, 255, 0.1)",
+    overlayPreviewBorder: "rgba(79, 124, 255, 0.78)",
+    overlayPreviewImage: "linear-gradient(135deg, rgba(79, 124, 255, 0.18), rgba(79, 124, 255, 0.04))",
+    pasteFeedbackBackground: "rgba(255, 255, 255, 0.96)",
+    pasteFeedbackBackgroundError: "rgba(254, 242, 242, 0.96)",
+    pasteFeedbackBorder: "rgba(79, 124, 255, 0.24)",
+    pasteFeedbackBorderError: "rgba(239, 68, 68, 0.22)",
+    pasteFeedbackShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
+    guideNode: "rgba(79, 124, 255, 0.92)",
+    guideContainer: "rgba(255, 255, 255, 0.94)",
+    guideOutline: "rgba(15, 23, 42, 0.16)",
+    insertionIndicator: "rgba(79, 124, 255, 0.92)",
+    fieldBackground: "rgba(255, 255, 255, 0.96)",
+    fieldBorder: "rgba(148, 163, 184, 0.2)",
+    fieldText: sharedCustomization.text.primary,
+    layerSelectedBackground: "rgba(79, 124, 255, 0.12)",
+    layerSelectedBorder: "rgba(79, 124, 255, 0.28)",
+    layerHoverBackground: "rgba(148, 163, 184, 0.08)",
+    imagePlaceholderBackground: "linear-gradient(135deg, rgba(240, 244, 249, 0.98) 0%, rgba(228, 234, 242, 0.98) 100%), radial-gradient(circle at top left, rgba(79, 124, 255, 0.12), transparent 48%)",
+    previewBackground: projectEditorTokens.shellBackground,
+    previewEmptyBackground: projectEditorTokens.shellBackground,
+    previewEmptySurface: "rgba(255, 255, 255, 0.94)",
+    previewEmptyBorder: "rgba(148, 163, 184, 0.2)",
+    previewEmptyShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
+} as const;
+
 export const designEditorDefaults = {
     typography: {
-        fontFamily: "var(--font-ibm-plex-sans)",
+        fontFamily: '"IBM Plex Sans", sans-serif',
         fontSize: 16,
         fontWeight: 400,
         lineHeight: 1.5,
@@ -17,7 +90,7 @@ export const designEditorDefaults = {
     fills: {
         root: "#f8fafc",
         frame: "#ffffff",
-        rectangle: "var(--ws-project-node-view-accent-muted)",
+        rectangle: projectEditorTokens.nodeViewAccentMuted,
         image: "linear-gradient(135deg, rgba(240, 244, 249, 0.98) 0%, rgba(228, 234, 242, 0.98) 100%)",
         fallback: "#ffffff",
         transparent: "transparent",
@@ -61,7 +134,7 @@ export const designEditorDefaults = {
     figmaFallback: {
         background: "#f8fafc",
         surface: "rgba(255,255,255,0.96)",
-        accent: "var(--ws-project-node-view-accent)",
+        accent: projectEditorTokens.nodeViewAccent,
         title: "#111827",
         subtitle: "#667085",
         rootRadius: 18,
@@ -141,14 +214,14 @@ export const designEditorStyles = {
             display: "grid",
             placeItems: "center",
             px: 3,
-            background: "var(--ws-design-loading-background)",
+            background: designEditorTokens.loadingBackground,
         },
         loadingCard: {
             width: "min(100%, 460px)",
             p: 3,
             borderRadius: sharedCustomization.radius.huge,
-            border: "1px solid var(--ws-design-panel-border-strong)",
-            background: "var(--ws-design-loading-surface)",
+            border: `1px solid ${designEditorTokens.panelBorderStrong}`,
+            background: designEditorTokens.loadingSurface,
             color: sharedCustomization.text.onDark,
         },
         loadingEyebrow: {
@@ -170,7 +243,7 @@ export const designEditorStyles = {
             minHeight: sharedCustomization.screenHeight,
             display: "grid",
             gridTemplateRows: "auto minmax(0, 1fr)",
-            background: "var(--ws-design-shell-background)",
+            background: designEditorTokens.shellBackground,
         },
         workspace: {
             minHeight: 0,
@@ -185,17 +258,17 @@ export const designEditorStyles = {
         layersSlot: {
             gridArea: "layers",
             minHeight: { lg: 0 },
-            borderTop: { xs: "1px solid var(--ws-design-panel-border)", lg: "none" },
+            borderTop: { xs: `1px solid ${designEditorTokens.panelBorder}`, lg: "none" },
         },
         canvasSlot: {
             gridArea: "canvas",
             minHeight: 0,
-            borderInline: { lg: "1px solid var(--ws-design-canvas-divider)" },
+            borderInline: { lg: `1px solid ${designEditorTokens.canvasDivider}` },
         },
         inspectorSlot: {
             gridArea: "inspector",
             minHeight: { lg: 0 },
-            borderTop: { xs: "1px solid var(--ws-design-panel-border)", lg: "none" },
+            borderTop: { xs: `1px solid ${designEditorTokens.panelBorder}`, lg: "none" },
         },
     },
     topbar: {
@@ -210,8 +283,8 @@ export const designEditorStyles = {
             flexWrap: "wrap",
             px: { xs: 2, lg: 3 },
             py: 1.5,
-            borderBottom: "1px solid var(--ws-design-topbar-border)",
-            background: "var(--ws-design-topbar-background)",
+            borderBottom: `1px solid ${designEditorTokens.topbarBorder}`,
+            background: designEditorTokens.topbarBackground,
             backdropFilter: "blur(24px)",
         },
         leftGroup: {
@@ -222,8 +295,8 @@ export const designEditorStyles = {
             minWidth: 0,
             px: 1.4,
             color: sharedCustomization.text.onDark,
-            borderColor: "var(--ws-design-topbar-button-border)",
-            background: "var(--ws-design-topbar-button-background)",
+            borderColor: designEditorTokens.topbarButtonBorder,
+            background: designEditorTokens.topbarButtonBackground,
         },
         meta: {
             minWidth: 0,
@@ -237,16 +310,16 @@ export const designEditorStyles = {
         title: {
             fontSize: "1rem",
             fontWeight: 600,
-            color: "var(--ws-design-title-text)",
+            color: designEditorTokens.titleText,
             letterSpacing: "-0.03em",
         },
         status: (saveState: SaveState) => ({
             px: 1.1,
             py: 0.55,
             borderRadius: sharedCustomization.radius.pill,
-            border: "1px solid var(--ws-design-status-border)",
-            background: "var(--ws-design-status-background)",
-            color: saveState === "error" ? "var(--ws-design-status-error)" : "var(--ws-design-status-text)",
+            border: `1px solid ${designEditorTokens.statusBorder}`,
+            background: designEditorTokens.statusBackground,
+            color: saveState === "error" ? designEditorTokens.statusError : designEditorTokens.statusText,
             fontSize: "0.76rem",
             fontWeight: 600,
         }),
@@ -256,25 +329,25 @@ export const designEditorStyles = {
         toolGroup: {
             p: 0.5,
             borderRadius: sharedCustomization.radius.pill,
-            border: "1px solid var(--ws-design-toolbar-group-border)",
-            background: "var(--ws-design-toolbar-group-background)",
+            border: `1px solid ${designEditorTokens.toolbarGroupBorder}`,
+            background: designEditorTokens.toolbarGroupBackground,
         },
         viewportGroup: {
             p: 0.45,
             borderRadius: sharedCustomization.radius.pill,
-            border: "1px solid var(--ws-design-toolbar-group-border)",
-            background: "var(--ws-design-toolbar-group-background)",
+            border: `1px solid ${designEditorTokens.toolbarGroupBorder}`,
+            background: designEditorTokens.toolbarGroupBackground,
         },
         viewportButton: (isActive: boolean) => ({
             minWidth: 0,
             gap: 0.75,
             px: 1.15,
             py: 0.65,
-            color: isActive ? "var(--ws-design-toolbar-button-active-text)" : "var(--ws-design-toolbar-button-text)",
-            background: isActive ? "var(--ws-design-toolbar-button-active-background)" : "transparent",
+            color: isActive ? designEditorTokens.toolbarButtonActiveText : designEditorTokens.toolbarButtonText,
+            background: isActive ? designEditorTokens.toolbarButtonActiveBackground : "transparent",
             borderRadius: sharedCustomization.radius.pill,
             "&:hover": {
-                background: isActive ? "var(--ws-surface-soft)" : "var(--ws-design-toolbar-button-hover)",
+                background: isActive ? "#f8fafc" : designEditorTokens.toolbarButtonHover,
             },
         }),
         viewportButtonLabel: {
@@ -286,10 +359,10 @@ export const designEditorStyles = {
             minWidth: 0,
             gap: 0.8,
             px: 1.25,
-            color: isActive ? "var(--ws-design-toolbar-button-active-text)" : "var(--ws-design-toolbar-button-text)",
-            background: isActive ? "var(--ws-design-toolbar-button-active-background)" : "transparent",
+            color: isActive ? designEditorTokens.toolbarButtonActiveText : designEditorTokens.toolbarButtonText,
+            background: isActive ? designEditorTokens.toolbarButtonActiveBackground : "transparent",
             "&:hover": {
-                background: isActive ? "var(--ws-surface-soft)" : "var(--ws-design-toolbar-button-hover)",
+                background: isActive ? "#f8fafc" : designEditorTokens.toolbarButtonHover,
             },
         }),
         toolLabel: {
@@ -298,22 +371,22 @@ export const designEditorStyles = {
         },
         toolShortcut: (isActive: boolean) => ({
             fontSize: "0.7rem",
-            color: isActive ? "var(--ws-design-toolbar-button-active-shortcut)" : "var(--ws-design-toolbar-button-shortcut)",
+            color: isActive ? designEditorTokens.toolbarButtonActiveShortcut : designEditorTokens.toolbarButtonShortcut,
         }),
         divider: {
-            borderColor: "var(--ws-design-toolbar-divider)",
+            borderColor: designEditorTokens.toolbarDivider,
             display: { xs: "none", sm: "block" },
         },
         zoomStepButton: {
             minWidth: 36,
             px: 0,
-            color: "var(--ws-design-toolbar-button-text)",
+            color: designEditorTokens.toolbarButtonText,
         },
         zoomDisplayButton: {
             minWidth: 84,
             color: sharedCustomization.text.onDark,
-            borderColor: "var(--ws-design-topbar-zoom-border)",
-            background: "var(--ws-design-topbar-button-background-strong)",
+            borderColor: designEditorTokens.topbarZoomBorder,
+            background: designEditorTokens.topbarButtonBackgroundStrong,
         },
     },
     layers: {
@@ -321,13 +394,13 @@ export const designEditorStyles = {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            borderRight: { lg: "1px solid var(--ws-design-panel-border)" },
-            background: "var(--ws-design-panel-background)",
+            borderRight: { lg: `1px solid ${designEditorTokens.panelBorder}` },
+            background: designEditorTokens.panelBackground,
         },
         header: {
             px: 2,
             py: 1.8,
-            borderBottom: "1px solid var(--ws-design-panel-header-border)",
+            borderBottom: `1px solid ${designEditorTokens.panelHeaderBorder}`,
         },
         headerEyebrow: {
             fontSize: "0.72rem",
@@ -337,7 +410,7 @@ export const designEditorStyles = {
         },
         headerBody: {
             fontSize: "0.92rem",
-            color: "var(--ws-design-body-text)",
+            color: designEditorTokens.bodyText,
             lineHeight: 1.6,
         },
         list: {
@@ -354,11 +427,11 @@ export const designEditorStyles = {
             transform: isHovered ? "translateX(1px)" : "none",
             transition: `background ${sharedCustomization.transition.fast}, transform ${sharedCustomization.transition.fast}, color ${sharedCustomization.transition.fast}`,
             background: isSelected
-                ? "var(--ws-design-layer-selected-background)"
+                ? designEditorTokens.layerSelectedBackground
                 : isHovered
-                    ? "var(--ws-design-layer-hover-background)"
+                    ? designEditorTokens.layerHoverBackground
                     : "transparent",
-            border: isSelected ? "1px solid var(--ws-design-layer-selected-border)" : "1px solid transparent",
+            border: isSelected ? `1px solid ${designEditorTokens.layerSelectedBorder}` : "1px solid transparent",
         }),
         collapseToggle: (hasChildren: boolean) => ({
             width: 16,
@@ -380,14 +453,14 @@ export const designEditorStyles = {
         name: (isSelected: boolean) => ({
             fontSize: "0.84rem",
             fontWeight: 600,
-            color: isSelected ? "var(--ws-design-title-text)" : "#dbe4f0",
+            color: isSelected ? designEditorTokens.titleText : "#dbe4f0",
         }),
         autoBadge: {
             px: 0.7,
             py: 0.2,
             borderRadius: sharedCustomization.radius.pill,
-            background: "var(--ws-design-auto-badge-background)",
-            color: "var(--ws-design-accent-text)",
+            background: designEditorTokens.autoBadgeBackground,
+            color: designEditorTokens.accentText,
             fontSize: "0.62rem",
             fontWeight: 700,
             letterSpacing: "0.12em",
@@ -404,8 +477,8 @@ export const designEditorStyles = {
         section: {
             p: 1.5,
             borderRadius: sharedCustomization.radius.xxl,
-            border: "1px solid var(--ws-design-panel-border)",
-            background: "var(--ws-design-panel-surface)",
+            border: `1px solid ${designEditorTokens.panelBorder}`,
+            background: designEditorTokens.panelSurface,
         },
         sectionTitle: {
             fontSize: "0.82rem",
@@ -422,10 +495,10 @@ export const designEditorStyles = {
         field: {
             "& .MuiOutlinedInput-root": {
                 borderRadius: sharedCustomization.radius.lg,
-                background: "var(--ws-design-field-background)",
-                color: "var(--ws-design-field-text)",
+                background: designEditorTokens.fieldBackground,
+                color: designEditorTokens.fieldText,
                 ".MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--ws-design-field-border)",
+                    borderColor: designEditorTokens.fieldBorder,
                 },
             },
         },
@@ -435,9 +508,9 @@ export const designEditorStyles = {
             display: "flex",
             alignItems: "center",
             borderRadius: sharedCustomization.radius.lg,
-            background: "var(--ws-design-field-background)",
-            border: "1px solid var(--ws-design-field-border)",
-            color: "var(--ws-design-body-text)",
+            background: designEditorTokens.fieldBackground,
+            border: `1px solid ${designEditorTokens.fieldBorder}`,
+            color: designEditorTokens.bodyText,
             fontSize: "0.9rem",
             textTransform: "capitalize",
         },
@@ -447,7 +520,7 @@ export const designEditorStyles = {
             gap: 1.1,
         },
         clipRow: {
-            color: "var(--ws-design-body-text)",
+            color: designEditorTokens.bodyText,
         },
         clipLabel: {
             fontSize: "0.84rem",
@@ -457,13 +530,13 @@ export const designEditorStyles = {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            borderLeft: { lg: "1px solid var(--ws-design-panel-border)" },
-            background: "var(--ws-design-panel-background)",
+            borderLeft: { lg: `1px solid ${designEditorTokens.panelBorder}` },
+            background: designEditorTokens.panelBackground,
         },
         panelHeader: {
             px: 2,
             py: 1.8,
-            borderBottom: "1px solid var(--ws-design-panel-header-border)",
+            borderBottom: `1px solid ${designEditorTokens.panelHeaderBorder}`,
         },
         panelEyebrow: {
             fontSize: "0.72rem",
@@ -473,7 +546,7 @@ export const designEditorStyles = {
         },
         panelBodyText: {
             fontSize: "0.92rem",
-            color: "var(--ws-design-body-text)",
+            color: designEditorTokens.bodyText,
             lineHeight: 1.6,
         },
         panelBody: {
@@ -485,8 +558,8 @@ export const designEditorStyles = {
         multiSelectionCard: {
             p: 1.5,
             borderRadius: sharedCustomization.radius.xxl,
-            border: "1px solid var(--ws-design-panel-border)",
-            background: "var(--ws-design-panel-surface)",
+            border: `1px solid ${designEditorTokens.panelBorder}`,
+            background: designEditorTokens.panelSurface,
         },
         multiSelectionEyebrow: {
             fontSize: "0.82rem",
@@ -585,7 +658,7 @@ export const designEditorStyles = {
             width: "100%",
             height: "100%",
             borderRadius: `${borderRadius}px`,
-            background: "var(--ws-design-image-placeholder-background)",
+            background: designEditorTokens.imagePlaceholderBackground,
             color: sharedCustomization.text.onDark,
         }),
         placeholderEyebrow: {
@@ -650,16 +723,16 @@ export const designEditorStyles = {
             borderRadius: `${options.borderRadius}px`,
             pointerEvents: options.locked ? "none" : "auto",
             outline: options.isCandidateParent
-                ? "2px solid var(--ws-design-selection-outline)"
+                ? `2px solid ${designEditorTokens.selectionOutline}`
                 : options.isSelected
-                    ? "1px solid var(--ws-design-selection-outline)"
+                    ? `1px solid ${designEditorTokens.selectionOutline}`
                     : options.isHovered
-                        ? "1px solid var(--ws-design-selection-outline-hover)"
+                        ? `1px solid ${designEditorTokens.selectionOutlineHover}`
                         : options.isActiveContainer
-                            ? "1px solid var(--ws-design-selection-outline-soft)"
+                            ? `1px solid ${designEditorTokens.selectionOutlineSoft}`
                             : "none",
             outlineOffset: options.isSelected || options.isHovered ? "2px" : 0,
-            background: options.isEditingText ? "var(--ws-design-editing-overlay-background)" : "transparent",
+            background: options.isEditingText ? designEditorTokens.editingOverlayBackground : "transparent",
             transition: options.hasActiveSession ? "none" : "outline-color 120ms ease",
         }),
         textEditor: (options: {
@@ -677,7 +750,7 @@ export const designEditorStyles = {
             border: "none",
             outline: "none",
             resize: "none",
-            background: "var(--ws-design-text-editor-background)",
+            background: designEditorTokens.textEditorBackground,
             color: options.color ?? "#0f172a",
             ...(options.fontFamily ? { fontFamily: options.fontFamily } : {}),
             ...(options.fontSize !== undefined ? { fontSize: options.fontSize } : {}),
@@ -692,8 +765,8 @@ export const designEditorStyles = {
             px: 1,
             py: 0.55,
             borderRadius: sharedCustomization.radius.pill,
-            background: "var(--ws-design-overlay-chip-background)",
-            color: "var(--ws-design-overlay-chip-text)",
+            background: designEditorTokens.overlayChipBackground,
+            color: designEditorTokens.overlayChipText,
             fontSize: "0.72rem",
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -708,8 +781,8 @@ export const designEditorStyles = {
             px: 0.9,
             py: 0.45,
             borderRadius: sharedCustomization.radius.pill,
-            background: "var(--ws-design-overlay-chip-background-strong)",
-            color: "var(--ws-design-accent-text)",
+            background: designEditorTokens.overlayChipBackgroundStrong,
+            color: designEditorTokens.accentText,
             fontSize: "0.68rem",
             fontWeight: 700,
             letterSpacing: "0.12em",
@@ -724,20 +797,20 @@ export const designEditorStyles = {
             width: options.frame.width,
             height: options.frame.height,
             borderRadius: options.nodeType === "text" ? "8px" : "18px",
-            border: "1px dashed var(--ws-design-overlay-preview-border)",
+            border: `1px dashed ${designEditorTokens.overlayPreviewBorder}`,
             background: options.nodeType === "text"
-                ? "var(--ws-design-overlay-preview-text-fill)"
+                ? designEditorTokens.overlayPreviewTextFill
                 : options.nodeType === "image"
-                    ? "var(--ws-design-overlay-preview-image)"
-                    : "var(--ws-design-overlay-preview-fill)",
+                    ? designEditorTokens.overlayPreviewImage
+                    : designEditorTokens.overlayPreviewFill,
         }),
         resizeHandle: (position: ReturnType<typeof getDesignResizeHandleStyle>) => ({
             position: "absolute",
             width: 10,
             height: 10,
             borderRadius: sharedCustomization.radius.pill,
-            background: "var(--ws-design-overlay-handle-fill)",
-            border: "2px solid var(--ws-design-overlay-handle-border)",
+            background: designEditorTokens.overlayHandleFill,
+            border: `2px solid ${designEditorTokens.overlayHandleBorder}`,
             ...position,
         }),
         root: (effectiveTool: "select" | "frame" | "rectangle" | "text" | "image" | "hand", activeSessionKind: string | null, canvasMode: "page" | "workspace") => ({
@@ -747,7 +820,7 @@ export const designEditorStyles = {
             overflow: "hidden",
             background: canvasMode === "workspace"
                 ? "radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 28%), linear-gradient(180deg, rgba(2, 6, 23, 0.98) 0%, rgba(15, 23, 42, 0.96) 100%)"
-                : "var(--ws-design-canvas-background)",
+                : designEditorTokens.canvasBackground,
             backgroundSize: "cover",
             cursor: effectiveTool === "hand"
                 ? activeSessionKind === "pan"
@@ -767,14 +840,14 @@ export const designEditorStyles = {
             maxWidth: 360,
             borderRadius: sharedCustomization.radius.xl,
             border: tone === "error"
-                ? "1px solid var(--ws-design-paste-feedback-border-error)"
-                : "1px solid var(--ws-design-paste-feedback-border)",
+                ? `1px solid ${designEditorTokens.pasteFeedbackBorderError}`
+                : `1px solid ${designEditorTokens.pasteFeedbackBorder}`,
             background: tone === "error"
-                ? "var(--ws-design-paste-feedback-background-error)"
-                : "var(--ws-design-paste-feedback-background)",
+                ? designEditorTokens.pasteFeedbackBackgroundError
+                : designEditorTokens.pasteFeedbackBackground,
             color: sharedCustomization.text.onDark,
             backdropFilter: "blur(18px)",
-            boxShadow: "var(--ws-design-paste-feedback-shadow)",
+            boxShadow: designEditorTokens.pasteFeedbackShadow,
         }),
         pasteFeedbackText: {
             fontSize: "0.82rem",
@@ -783,7 +856,7 @@ export const designEditorStyles = {
         grid: (viewport: { x: number; y: number; zoom: number }) => ({
             position: "absolute",
             inset: 0,
-            backgroundImage: "linear-gradient(var(--ws-design-canvas-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ws-design-canvas-grid) 1px, transparent 1px)",
+            backgroundImage: `linear-gradient(${designEditorTokens.canvasGrid} 1px, transparent 1px), linear-gradient(90deg, ${designEditorTokens.canvasGrid} 1px, transparent 1px)`,
             backgroundSize: `${24 * viewport.zoom}px ${24 * viewport.zoom}px`,
             backgroundPosition: `${viewport.x}px ${viewport.y}px`,
         }),
@@ -802,8 +875,8 @@ export const designEditorStyles = {
             top: guide.axis === "vertical" ? guide.start : guide.position,
             width: guide.axis === "vertical" ? 1.5 : Math.max(1.5, guide.end - guide.start),
             height: guide.axis === "vertical" ? Math.max(1.5, guide.end - guide.start) : 1.5,
-            background: guide.source === "container" ? "var(--ws-design-guide-container)" : "var(--ws-design-guide-node)",
-            boxShadow: "0 0 0 1px var(--ws-design-guide-outline)",
+            background: guide.source === "container" ? designEditorTokens.guideContainer : designEditorTokens.guideNode,
+            boxShadow: `0 0 0 1px ${designEditorTokens.guideOutline}`,
             pointerEvents: "none",
         }),
         insertionIndicator: (indicator: { left: number; top: number; width: number; height: number }) => ({
@@ -813,8 +886,8 @@ export const designEditorStyles = {
             width: indicator.width,
             height: indicator.height,
             borderRadius: sharedCustomization.radius.pill,
-            background: "var(--ws-design-insertion-indicator)",
-            boxShadow: "0 0 0 1px var(--ws-design-guide-outline)",
+            background: designEditorTokens.insertionIndicator,
+            boxShadow: `0 0 0 1px ${designEditorTokens.guideOutline}`,
             pointerEvents: "none",
         }),
     },
@@ -824,16 +897,16 @@ export const designEditorStyles = {
             display: "grid",
             placeItems: "center",
             px: 3,
-            background: "var(--ws-preview-empty-background)",
+            background: designEditorTokens.previewEmptyBackground,
         },
         emptyCard: {
             width: "min(100%, 460px)",
             p: 3,
             borderRadius: sharedCustomization.radius.huge,
-            border: "1px solid var(--ws-preview-empty-border)",
-            background: "var(--ws-preview-empty-surface)",
+            border: `1px solid ${designEditorTokens.previewEmptyBorder}`,
+            background: designEditorTokens.previewEmptySurface,
             color: "#0f172a",
-            boxShadow: "var(--ws-preview-empty-shadow)",
+            boxShadow: designEditorTokens.previewEmptyShadow,
         },
         emptyEyebrow: {
             fontSize: "0.78rem",
@@ -853,7 +926,7 @@ export const designEditorStyles = {
         root: {
             minHeight: sharedCustomization.screenHeight,
             overflow: "auto",
-            background: "var(--ws-preview-background)",
+            background: designEditorTokens.previewBackground,
         },
         canvasArea: {
             minHeight: sharedCustomization.screenHeight,

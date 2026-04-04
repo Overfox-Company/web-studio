@@ -39,14 +39,7 @@ export function BaseNodeCard({ node, selected = false, dragging = false, preview
             }}
         >
             <Box sx={projectEditorStyles.baseNodeCard.grid}>
-                <Stack spacing={0.7} sx={projectEditorStyles.baseNodeCard.sideColumn}>
-                    <Typography sx={projectEditorStyles.baseNodeCard.sideLabel("left")}>
-                        Inputs
-                    </Typography>
-                    {inputSockets.map((socket) => (
-                        <SocketHandle key={socket.id} node={node} socket={socket} preview={preview} />
-                    ))}
-                </Stack>
+
 
                 <Stack spacing={1} sx={projectEditorStyles.baseNodeCard.contentColumn}>
                     <NodeHeader kind={resolvedKind} name={node.name} token={token} />
@@ -70,16 +63,26 @@ export function BaseNodeCard({ node, selected = false, dragging = false, preview
                             </Typography>
                         </Stack>
                     </Box>
+
+                    <Stack spacing={0.7} sx={projectEditorStyles.baseNodeCard.sideColumn}>
+                        <Typography sx={projectEditorStyles.baseNodeCard.sideLabel("left")}>
+                            Inputs
+                        </Typography>
+                        {inputSockets.map((socket) => (
+                            <SocketHandle key={socket.id} node={node} socket={socket} preview={preview} />
+                        ))}
+                    </Stack>
+                    <Stack spacing={0.7} sx={projectEditorStyles.baseNodeCard.sideColumn}>
+                        <Typography sx={projectEditorStyles.baseNodeCard.sideLabel("right")}>
+                            Outputs
+                        </Typography>
+                        {outputSockets.map((socket) => (
+                            <SocketHandle key={socket.id} node={node} socket={socket} preview={preview} />
+                        ))}
+                    </Stack>
                 </Stack>
 
-                <Stack spacing={0.7} sx={projectEditorStyles.baseNodeCard.sideColumn}>
-                    <Typography sx={projectEditorStyles.baseNodeCard.sideLabel("right")}>
-                        Outputs
-                    </Typography>
-                    {outputSockets.map((socket) => (
-                        <SocketHandle key={socket.id} node={node} socket={socket} preview={preview} />
-                    ))}
-                </Stack>
+
             </Box>
         </Box>
     );

@@ -13,7 +13,7 @@ export function NodeHeader({ kind, name, token }: { kind: ProjectNodeKind; name:
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5}>
             <Stack direction="row" alignItems="center" spacing={1.25} minWidth={0}>
                 <NodeIcon kind={kind} />
-                <Box sx={projectEditorStyles.nodeHeader.column}>
+                <Box sx={projectEditorStyles.nodeHeader.row}>
                     <Typography sx={projectEditorStyles.nodeHeader.title}>
                         {name}
                     </Typography>

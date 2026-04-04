@@ -69,6 +69,7 @@ export function NodePalette({ activeKind }: { activeKind: ProjectNodeKind | null
                 </PanelHeader>
 
                 <TextField
+                    //      style={projectEditorStyles.nodePalette.searchField}
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search nodes"

@@ -129,10 +129,10 @@ export function SocketHandle({ node, socket, preview = false }: SocketHandleProp
             ) : null}
 
             <Stack spacing={0.15} sx={projectEditorStyles.socket.labelStack(socket.side)}>
-                <Typography sx={projectEditorStyles.socket.label(compatibilityState, socket.side)}>
+                { /*  <Typography sx={projectEditorStyles.socket.label(compatibilityState, socket.side)}>
                     {socket.label}
                     {socket.required ? " *" : ""}
-                </Typography>
+                </Typography>*/}
                 <Typography sx={projectEditorStyles.socket.type(socket.color, socket.side)}>
                     {socket.socketType}
                 </Typography>

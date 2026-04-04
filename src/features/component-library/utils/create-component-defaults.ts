@@ -28,17 +28,17 @@ export const BASE_COMPONENT_LIBRARY_ITEMS: Array<{
     description: string;
     accent: string;
 }> = [
-    { type: "button", label: "Button", description: "CTA button template", accent: "#3b82f6" },
-    { type: "input", label: "Input", description: "Single-line field", accent: "#22c55e" },
-    { type: "checkbox", label: "Checkbox", description: "Selection control", accent: "#f59e0b" },
-    { type: "textarea", label: "Textarea", description: "Multi-line field", accent: "#8b5cf6" },
-    { type: "label", label: "Label", description: "Form helper text", accent: "#14b8a6" },
-    { type: "select", label: "Select", description: "Basic dropdown shell", accent: "#0ea5e9" },
-    { type: "card", label: "Card", description: "Content container", accent: "#f97316" },
-    { type: "badge", label: "Badge", description: "Small status pill", accent: "#ec4899" },
-    { type: "switch", label: "Switch", description: "Toggle control", accent: "#10b981" },
-    { type: "radio", label: "Radio", description: "Single choice control", accent: "#eab308" },
-];
+        { type: "button", label: "Button", description: "CTA button template", accent: "#3b82f6" },
+        { type: "input", label: "Input", description: "Single-line field", accent: "#22c55e" },
+        { type: "checkbox", label: "Checkbox", description: "Selection control", accent: "#f59e0b" },
+        { type: "textarea", label: "Textarea", description: "Multi-line field", accent: "#8b5cf6" },
+        { type: "label", label: "Label", description: "Form helper text", accent: "#14b8a6" },
+        { type: "select", label: "Select", description: "Basic dropdown shell", accent: "#0ea5e9" },
+        { type: "card", label: "Card", description: "Content container", accent: "#f97316" },
+        { type: "badge", label: "Badge", description: "Small status pill", accent: "#ec4899" },
+        { type: "switch", label: "Switch", description: "Toggle control", accent: "#10b981" },
+        { type: "radio", label: "Radio", description: "Single choice control", accent: "#eab308" },
+    ];
 
 function now() {
     return new Date().toISOString();
