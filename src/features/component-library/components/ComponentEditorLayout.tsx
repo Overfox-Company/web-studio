@@ -15,6 +15,7 @@ import { useComponentLibraryStore } from "@/src/features/component-library/store
 import type { BaseComponentType } from "@/src/features/component-library/types/component.types";
 import { DesignCanvas } from "@/src/features/design-editor/components/DesignCanvas";
 import { DesignInspectorPanel } from "@/src/features/design-editor/components/DesignInspectorPanel";
+import { useLockBodyScroll } from "@/src/lib/hooks/use-lock-body-scroll";
 
 interface ComponentEditorLayoutProps {
     projectId: string;
@@ -63,6 +64,8 @@ function ComponentWorkspaceCanvas({ hasLibrary, activeComponentName }: { hasLibr
 }
 
 export function ComponentEditorLayout({ projectId }: ComponentEditorLayoutProps) {
+    useLockBodyScroll();
+
     const { saveState } = useComponentLibraryPersistence({ projectId });
     const snapshot = useComponentLibraryStore((state) => state.snapshot);
     const createLibrary = useComponentLibraryStore((state) => state.createLibrary);
@@ -138,14 +141,14 @@ export function ComponentEditorLayout({ projectId }: ComponentEditorLayoutProps)
                         {activeComponent ? (
                             <DesignInspectorPanel />
                         ) : (
-                            <Stack spacing={1} sx={{ height: "100%", justifyContent: "center", px: 3, background: "var(--ws-design-panel-background)", color: "#e2e8f0" }}>
-                                <Typography sx={{ fontSize: "0.78rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(226, 232, 240, 0.58)" }}>
+                            <Stack spacing={1} sx={{ height: "100%", justifyContent: "center", px: 3, background: "rgba(22, 22, 24, 0.96)", color: "#f5f7fb" }}>
+                                <Typography sx={{ fontSize: "0.78rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(173, 187, 215, 0.58)" }}>
                                     Properties
                                 </Typography>
                                 <Typography sx={{ fontSize: "1rem", fontWeight: 700 }}>
                                     Select or create a component
                                 </Typography>
-                                <Typography sx={{ color: "rgba(226, 232, 240, 0.72)", lineHeight: 1.7 }}>
+                                <Typography sx={{ color: "rgba(173, 187, 215, 0.82)", lineHeight: 1.7 }}>
                                     The inspector edits the visual properties of the selected node inside the active library component.
                                 </Typography>
                             </Stack>

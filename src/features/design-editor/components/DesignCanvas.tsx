@@ -228,11 +228,13 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
         }
 
         const nextX = (containerRef.current.clientWidth - rootFrameOverride.width * viewport.zoom) / 2;
+        const nextY = (containerRef.current.clientHeight - rootFrameOverride.height * viewport.zoom) / 2;
         const currentViewport = viewportRef.current;
 
         setViewport({
             ...currentViewport,
             x: nextX,
+            y: nextY,
         });
         lastCenteredViewportModeRef.current = centerSignature;
     }, [rootFrameOverride, rootNode?.id, setViewport, viewport.zoom, viewportMode]);
@@ -955,6 +957,7 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
 
     return (
         <Box
+            id="design-editor-canvas"
             ref={containerRef}
             onWheel={handleCanvasWheel}
             onPointerDown={(event) => {

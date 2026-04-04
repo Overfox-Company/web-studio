@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { ArrowRight01Icon, CodeSquareIcon, Search01Icon } from "@hugeicons-pro/core-stroke-standard";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, InputBase, Stack, Typography } from "@mui/material";
 
 import { designEditorStyles } from "@/src/customization/design-editor";
 import { useComponentEditorStore } from "@/src/features/component-library/store/component-editor.store";
@@ -53,20 +55,52 @@ export function DesignComponentLibraryPanel({ projectId }: DesignComponentLibrar
 
     return (
         <Box sx={designEditorStyles.layers.root}>
-            <Stack spacing={0.6} sx={designEditorStyles.layers.header}>
-                <Typography sx={designEditorStyles.layers.headerEyebrow}>Components</Typography>
-                <Typography sx={designEditorStyles.layers.headerBody}>The page editor can browse saved library components and jump into the library builder.</Typography>
+            <Stack spacing={0.6} sx={designEditorStyles.layers.subsectionHeader}>
+                <Typography sx={designEditorStyles.layers.subsectionTitle}>Components</Typography>
+                <Typography sx={designEditorStyles.layers.itemMeta}>{components.length}</Typography>
             </Stack>
 
             <Stack spacing={0.8} sx={designEditorStyles.layers.list}>
-                <TextField value={query} onChange={(event) => setQuery(event.target.value)} size="small" placeholder="Search components" />
+                <Box sx={designEditorStyles.layers.searchShell}>
+                    <Box sx={designEditorStyles.layers.searchIcon}>
+                        <HugeiconsIcon icon={Search01Icon} size={18} strokeWidth={1.6} />
+                    </Box>
+                    <InputBase
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Buscar componentes guardados"
+                        sx={designEditorStyles.layers.searchInput}
+                    />
+                </Box>
 
                 {components.map(({ component, library }) => (
-                    <Stack key={component.id} spacing={0.45} sx={designEditorStyles.inspector.section}>
-                        <Typography sx={designEditorStyles.layers.name(false)}>{component.name}</Typography>
-                        <Typography sx={designEditorStyles.layers.typeLabel}>{library?.name ?? "Library"}</Typography>
-                        <Stack direction="row" spacing={0.8}>
-                            <Button variant="text" size="small" onClick={() => handleOpen(component.id)}>Open Builder</Button>
+                    <Stack key={component.id} spacing={0.85} sx={designEditorStyles.layers.libraryItem}>
+                        <Stack direction="row" spacing={0.85} alignItems="center">
+                            <Box sx={designEditorStyles.layers.itemIcon(false)}>
+                                <HugeiconsIcon icon={CodeSquareIcon} size={16} strokeWidth={1.7} />
+                            </Box>
+
+                            <Stack sx={{ minWidth: 0, flex: 1 }}>
+                                <Typography sx={designEditorStyles.layers.name(false)}>{component.name}</Typography>
+                                <Typography sx={designEditorStyles.layers.typeLabel}>
+                                    {(library?.name ?? "Library")} • {component.baseType}
+                                </Typography>
+                            </Stack>
+
+                            <Typography sx={designEditorStyles.layers.itemMeta}>
+                                {component.baseType}
+                            </Typography>
+                        </Stack>
+
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                            <Typography sx={designEditorStyles.layers.headerBody}>
+                                Edita este bloque en el builder y vuelve a insertarlo desde la librería.
+                            </Typography>
+
+                            <Button variant="text" size="small" onClick={() => handleOpen(component.id)} sx={designEditorStyles.layers.libraryAction}>
+                                <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.9} />
+                                <Typography sx={designEditorStyles.layers.libraryActionLabel}>Open</Typography>
+                            </Button>
                         </Stack>
                     </Stack>
                 ))}

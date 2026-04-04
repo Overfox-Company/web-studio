@@ -2,30 +2,30 @@ import { alpha, createTheme } from "@mui/material/styles";
 
 export const projectEditorTheme = createTheme({
     palette: {
-        mode: "light",
+        mode: "dark",
         primary: {
-            main: "#1f2937",
+            main: "#92DA70",
         },
         secondary: {
-            main: "#4f7cff",
+            main: "#cbdd6c",
         },
         background: {
-            default: "#eef2f6",
-            paper: "#ffffff",
+            default: "#111116",
+            paper: "#161618",
         },
         text: {
-            primary: "#111827",
-            secondary: "#5b6472",
+            primary: "#ffffff",
+            secondary: "#adbbd7",
         },
-        divider: "rgba(148, 163, 184, 0.28)",
+        divider: "rgba(255, 255, 255, 0.1)",
         success: {
-            main: "#2f7d62",
+            main: "#25c657",
         },
         warning: {
-            main: "#b7791f",
+            main: "#cbdd6c",
         },
         error: {
-            main: "#c34a36",
+            main: "#d64178",
         },
     },
     shape: {
@@ -69,10 +69,11 @@ export const projectEditorTheme = createTheme({
         MuiCssBaseline: {
             styleOverrides: {
                 ":root": {
-                    colorScheme: "light",
+                    colorScheme: "dark",
                 },
                 body: {
-                    backgroundColor: "#eef2f6",
+                    backgroundColor: "#111116",
+                    color: "#ffffff",
                 },
             },
         },
@@ -80,6 +81,8 @@ export const projectEditorTheme = createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: "none",
+                    backgroundColor: "#161618",
+                    color: "#ffffff",
                 },
             },
         },
@@ -94,18 +97,18 @@ export const projectEditorTheme = createTheme({
                     paddingInline: 16,
                 },
                 contained: {
-                    background: "#111827",
-                    color: "#f8fafc",
+                    background: "linear-gradient(180deg, #92DA70 0%, #79C655 100%)",
+                    color: "#0d1408",
                     "&:hover": {
-                        background: "#0f172a",
+                        background: "linear-gradient(180deg, #A2E481 0%, #86CF61 100%)",
                     },
                 },
                 outlined: {
-                    borderColor: "rgba(148, 163, 184, 0.3)",
-                    color: "#334155",
+                    borderColor: "transparent",
+                    color: "#ffffff",
                     "&:hover": {
-                        borderColor: "rgba(100, 116, 139, 0.4)",
-                        background: "rgba(255, 255, 255, 0.7)",
+                        borderColor: "transparent",
+                        background: "rgba(146, 218, 112, 0.08)",
                     },
                 },
             },
@@ -128,17 +131,17 @@ export const projectEditorTheme = createTheme({
             styleOverrides: {
                 root: {
                     borderRadius: 6,
-                    backgroundColor: "rgba(255,255,255,0.8)",
+                    backgroundColor: "rgba(36, 35, 38, 0.94)",
                     transition: "box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease",
                     ".MuiOutlinedInput-notchedOutline": {
-                        borderColor: "rgba(148, 163, 184, 0.3)",
+                        borderColor: "transparent",
                     },
                     "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "rgba(100, 116, 139, 0.45)",
+                        borderColor: "transparent",
                     },
                     "&.Mui-focused": {
-                        backgroundColor: "#ffffff",
-                        boxShadow: `0 0 0 4px ${alpha("#4f7cff", 0.1)}`,
+                        backgroundColor: "rgba(44, 43, 47, 0.98)",
+                        boxShadow: `0 0 0 4px ${alpha("#92DA70", 0.18)}`,
                     },
                 },
             },
@@ -155,6 +158,9 @@ export const projectEditorTheme = createTheme({
                 root: {
                     borderRadius: 4,
                     margin: 4,
+                    "&:hover": {
+                        backgroundColor: "rgba(146, 218, 112, 0.1)",
+                    },
                 },
             },
         },

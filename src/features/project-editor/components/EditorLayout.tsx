@@ -38,6 +38,7 @@ import { NodeIcon } from "@/src/features/project-editor/nodes/base/NodeIcon";
 import { useProjectCompile } from "@/src/features/project-compile/use-project-compile";
 import { NODE_VISUALS } from "@/src/features/project-editor/utils/node-colors";
 import type { ProjectNodeKind } from "@/src/features/project-editor/types/editor.types";
+import { useLockBodyScroll } from "@/src/lib/hooks/use-lock-body-scroll";
 
 const DRAG_PREVIEW_POINTER_OFFSET = {
     x: 36,
@@ -103,6 +104,8 @@ function DragPreview({ kind }: { kind: ProjectNodeKind }) {
 }
 
 export function EditorLayout({ projectId, initialName }: { projectId: string; initialName: string }) {
+    useLockBodyScroll();
+
     useEditorPersistence({ projectId, projectName: initialName });
 
     const selectedNodeId = useProjectEditorStore((state) => state.ui.selectedNodeId);

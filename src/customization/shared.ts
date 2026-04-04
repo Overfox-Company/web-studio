@@ -10,11 +10,11 @@ export const sharedCustomization = {
     text: {
         primary: "#ffffff",
         secondary: "#adbbd7",
-        muted: "#98a2b3",
-        strong: "#334155",
-        onDark: "#e2e8f0",
-        mutedOnDark: "#94a3b8",
-        subtleOnDark: "#64748b",
+        muted: "#7d7f85",
+        strong: "#e4e4e4",
+        onDark: "#f5f7fb",
+        mutedOnDark: "#a0aac0",
+        subtleOnDark: "#7d7f85",
     },
     border: {
         subtle: "rgba(148, 163, 184, 0.12)",

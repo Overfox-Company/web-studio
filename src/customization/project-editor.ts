@@ -6,30 +6,37 @@ import type { Theme } from "@mui/material/styles";
 import { sharedCustomization } from "@/src/customization/shared";
 import type { ProjectNodeKind } from "@/src/features/project-editor/types/editor.types";
 import type { SocketType } from "@/src/features/project-editor/utils/socket-types";
-import { color } from "framer-motion";
 
 type Sx = SxProps<Theme>;
-const CARD = '#242326'
-const CANVAS = '#161618'
-const SHELL = '#111116'
-const NODE_PANEL = '#1c1b1f'
-const LINE_CONECTIONS = '#B1B3B4'
-const TEXT = "white"
-const TEXT_NODE = "#e4e4e4"
-const NODE_TITLE_IO = '#7D7F85'
+const CARD = "#242326";
+const CANVAS = "#161618";
+const SHELL = "#09090c";
+const NODE_PANEL = "#1c1b1f";
+const LINE_CONNECTIONS = "#b1b3b4";
+const TEXT = "#ffffff";
+const TEXT_NODE = "#e4e4e4";
+const NODE_TITLE_IO = "#7d7f85";
 
-const NODE_VIEW_ACCENT = '#575aff'
-const NODE_API_ACCENT = '#CBDD6C'
-const NODE_DATABASE_ACCENT = '#25C657'
-const NODE_ACTION_ACCENT = '#d64178'
+const NODE_VIEW_ACCENT = "#575aff";
+const NODE_API_ACCENT = "#cbdd6c";
+const NODE_DATABASE_ACCENT = "#25c657";
+const NODE_ACTION_ACCENT = "#d64178";
+const LAYOUT_PRIMARY_ACCENT = "#92DA70";
 export const projectEditorTokens = {
+    layoutPrimaryAccent: LAYOUT_PRIMARY_ACCENT,
+    layoutPrimaryAccentStrong: "#79c655",
+    layoutPrimaryAccentSoft: "rgba(146, 218, 112, 0.16)",
+    layoutPrimaryAccentBorder: "rgba(146, 218, 112, 0.4)",
+    layoutPrimaryAccentText: "#0d1408",
     shellBackground: SHELL,
     topbarBackground: SHELL,
     topbarText: TEXT,
+    topbarBorder: "rgba(255, 255, 255, 0.08)",
     panelBackground: CANVAS,
     panelToggleBackground: CARD,
-    statusBackground: "#ffffff",
-    statusText: SHELL,
+    statusBackground: CARD,
+    statusText: LAYOUT_PRIMARY_ACCENT,
+    statusBorder: "transparent",
     panelBorder: "rgba(148, 163, 184, 0.24)",
     dragPreviewShadow: "0 20px 40px rgba(15, 23, 42, 0.12)",
     canvasSurfaceBorder: "rgba(59, 59, 59, 0.85)",
@@ -39,7 +46,7 @@ export const projectEditorTokens = {
     canvasGrid: CARD,
     canvasLabGrid: "rgba(148, 163, 184, 0.18)",
     canvasLabBackground: "radial-gradient(circle at top left, rgba(79, 124, 255, 0.06), transparent 24%), linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
-    connectionStroke: LINE_CONECTIONS,
+    connectionStroke: LINE_CONNECTIONS,
     emptyBorder: "rgba(255, 0, 221, 0)",
     emptyBackground: CARD,
     nodeCardBackground: NODE_PANEL,
@@ -165,6 +172,8 @@ export const projectEditorStyles = {
     primitives: {
         shell: {
             minHeight: sharedCustomization.screenHeight,
+            height: "100dvh",
+            overflow: "hidden",
             background: projectEditorTokens.shellBackground,
             color: projectEditorTokens.topbarText,
         },
@@ -185,7 +194,6 @@ export const projectEditorStyles = {
             color: sharedCustomization.text.secondary,
         },
         toolbarButton: {
-
             color: sharedCustomization.text.primary,
             minHeight: 38,
             borderRadius: sharedCustomization.radius.sm,
@@ -195,7 +203,6 @@ export const projectEditorStyles = {
             borderRadius: sharedCustomization.radius.xs,
             fontSize: "0.76rem",
             background: projectEditorTokens.statusBackground,
-            //  border: `1px solid red`,
             color: projectEditorTokens.statusText,
         },
         fieldLabel: {
@@ -266,8 +273,10 @@ export const projectEditorStyles = {
     layout: {
         root: {
             minHeight: sharedCustomization.screenHeight,
+            height: "100dvh",
             display: "grid",
             gridTemplateRows: "auto minmax(0, 1fr)",
+            overflow: "hidden",
         },
         stage: {
             position: "relative",
@@ -364,16 +373,17 @@ export const projectEditorStyles = {
         } satisfies CSSProperties,
         backgroundColor: projectEditorTokens.canvasGrid,
         backgroundGap: 18,
-        backgroundSize: 2.5,
+        backgroundSize: 4,
         labBackgroundColor: projectEditorTokens.canvasLabGrid,
         labBackgroundGap: 18,
         labBackgroundSize: 1.1,
     },
     nodePalette: {
         searchField: {
-
             color: sharedCustomization.text.primary,
-            backgroundColor: 'red',
+            ".MuiOutlinedInput-root": {
+                backgroundColor: projectEditorTokens.panelToggleBackground,
+            },
         },
         panel: {
             height: "100%",
@@ -388,15 +398,19 @@ export const projectEditorStyles = {
         },
         item: (accent: string, isActive: boolean, isDragging: boolean, transform: string | undefined): Sx => ({
             borderRadius: sharedCustomization.radius.lg,
-            border: `1px solid ${isActive ? accent : projectEditorTokens.panelBorder}`,
-            background: isDragging ? "rgba(255,255,255,0.96)" : "rgba(235, 239, 246, 0)",
+            border: "none",
+            background: isDragging
+                ? projectEditorTokens.panelToggleBackground
+                : isActive
+                    ? projectEditorTokens.panelToggleBackground
+                    : projectEditorTokens.panelBackground,
             p: 1,
             overflow: "hidden",
             cursor: "grab",
             opacity: isDragging ? 0.72 : 1,
             transform,
             boxShadow: isActive ? `0 12px 24px ${accent}12` : "none",
-            transition: `border-color ${sharedCustomization.transition.standard}, transform ${sharedCustomization.transition.standard}, background-color ${sharedCustomization.transition.standard}, box-shadow ${sharedCustomization.transition.standard}, opacity ${sharedCustomization.transition.standard}`,
+            transition: `transform ${sharedCustomization.transition.standard}, background-color ${sharedCustomization.transition.standard}, box-shadow ${sharedCustomization.transition.standard}, opacity ${sharedCustomization.transition.standard}`,
             willChange: "transform",
         }),
         itemTitle: {
