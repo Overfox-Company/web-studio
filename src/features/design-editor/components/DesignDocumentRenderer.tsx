@@ -77,7 +77,7 @@ export function DesignDocumentRenderer({
             alignItems: string;
             gap: number;
             padding: string;
-        } | undefined = node.type === "frame" && node.layoutMode === "auto"
+        } | undefined = mode === "preview" && node.type === "frame" && node.layoutMode === "auto"
                 ? {
                     direction: node.autoLayout.direction === "horizontal" ? "row" : "column",
                     justifyContent: mapDesignAutoLayoutJustify(node.autoLayout.justifyContent),
@@ -95,7 +95,7 @@ export function DesignDocumentRenderer({
             opacity,
             clipContent: isFrameNode(node) && node.clipContent,
             boxShadow,
-            background: node.type === "text" ? "transparent" : node.style.fill,
+            background: node.style.fill,
             border,
             pointerEvents: mode === "editor" ? "none" : "auto",
             autoLayout,

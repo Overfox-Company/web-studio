@@ -25,6 +25,21 @@ function zeroPadding() {
     };
 }
 
+function defaultSizing() {
+    return {
+        width: {
+            mode: "fixed" as const,
+            min: null,
+            max: null,
+        },
+        height: {
+            mode: "fixed" as const,
+            min: null,
+            max: null,
+        },
+    };
+}
+
 function pickFill(node: ImportAstNode) {
     return node.fills[0]?.value
         ?? (node.type === "text" || node.type === "svg-asset"
@@ -70,6 +85,7 @@ function buildBaseNode(node: ImportAstNode, parentId: string | null, placementOf
         y: node.y + placementOffset.y,
         width: node.width,
         height: node.height,
+        sizing: defaultSizing(),
         rotation: node.rotation,
         visible: true,
         locked: false,
@@ -175,7 +191,7 @@ function buildNodeTree(
     return designNode.id;
 }
 
-function computeImportedBounds(roots: ImportAstNode[]) {
+export function computeImportedBounds(roots: ImportAstNode[]) {
     if (roots.length === 0) {
         return {
             width: 0,
@@ -199,14 +215,17 @@ export function buildImportedDesignNodes({
     placementOffset,
 }: BuildImportedNodesOptions): BuiltImportedNodes {
     const nodes: Record<string, DesignNode> = {};
-    const importedBounds = computeImportedBounds(importedDocument.roots);
-    const centeredPlacementOffset = targetParentUsesAutoLayout
-        ? { x: 0, y: 0 }
-        : {
-            x: placementOffset.x - importedBounds.width / 2,
-            y: placementOffset.y - importedBounds.height / 2,
-        };
-    const rootNodeIds = importedDocument.roots.map((root) => buildNodeTree(root, targetParentId, nodes, centeredPlacementOffset));
+    const rootNodeIds = importedDocument.roots.map((root) => buildNodeTree(
+        root,
+        targetParentId,
+        nodes,
+        targetParentUsesAutoLayout
+            ? {
+                x: -root.x,
+                y: -root.y,
+            }
+            : placementOffset,
+    ));
 
     return {
         nodes,

@@ -22,6 +22,21 @@ type NodeStyleOverrides = Partial<Omit<DesignNodeStyle, "typography">> & {
     typography?: Partial<DesignTypography>;
 };
 
+function createDefaultSizing() {
+    return {
+        width: {
+            mode: "fixed" as const,
+            min: null,
+            max: null,
+        },
+        height: {
+            mode: "fixed" as const,
+            min: null,
+            max: null,
+        },
+    };
+}
+
 export const BASE_COMPONENT_LIBRARY_ITEMS: Array<{
     type: BaseComponentType;
     label: string;
@@ -117,6 +132,7 @@ function createFrameNode(params: {
         y: params.y,
         width: params.width,
         height: params.height,
+        sizing: createDefaultSizing(),
         rotation: 0,
         visible: true,
         locked: false,
@@ -165,6 +181,7 @@ function createTextNode(params: {
         y: params.y,
         width: params.width,
         height: params.height,
+        sizing: createDefaultSizing(),
         rotation: 0,
         visible: true,
         locked: false,
@@ -193,6 +210,7 @@ function createRectangleNode(params: {
         y: params.y,
         width: params.width,
         height: params.height,
+        sizing: createDefaultSizing(),
         rotation: 0,
         visible: true,
         locked: false,

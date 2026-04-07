@@ -1,27 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
-    AlphaSquareIcon,
     DropletIcon,
-    HierarchySquare01Icon,
     Image01Icon,
     InputTextIcon,
     Layout01Icon,
     Layers01Icon,
-    MenuTwoLineIcon,
-    MoveIcon,
     PackageIcon,
     PaintBrush02Icon,
     SquareIcon,
     TextAlignCenterIcon,
     TextAlignLeftIcon,
     TextAlignRightIcon,
-    ViewIcon,
 } from "@hugeicons-pro/core-solid-standard";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, ButtonBase, Collapse, Stack, Typography } from "@mui/material";
 
 import { designEditorDefaults, designEditorStyles } from "@/src/customization/design-editor";
 import { DesignColorControl } from "@/src/features/design-editor/components/DesignColorControl";
@@ -31,11 +26,12 @@ import {
     IconValueField,
     InspectorSection,
     LinkedSpacingControl,
+    PropertySelectInput,
     PropertyChipInput,
     PropertyNumberInput,
     SegmentedIconControl,
+    SizeConstraintControl,
     StrokeRowControl,
-    TogglePill,
     ToggleSwitchRow,
 } from "@/src/features/design-editor/components/inspector/InspectorControls";
 import { uniquePalette } from "@/src/features/design-editor/components/color-picker/ColorConversionUtils";
@@ -44,9 +40,43 @@ import { useDesignInteractionStore } from "@/src/features/design-editor/store/de
 import type { DesignNode } from "@/src/features/design-editor/types/design.types";
 import { isFrameNode } from "@/src/features/design-editor/utils/design-tree";
 
+const TEXT_FONT_WEIGHT_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
+const TEXT_FONT_FAMILY_OPTIONS = [
+    { value: designEditorDefaults.typography.fontFamily, label: "IBM Plex Sans", previewFontFamily: designEditorDefaults.typography.fontFamily },
+    { value: '"IBM Plex Mono", monospace', label: "IBM Plex Mono", previewFontFamily: '"IBM Plex Mono", monospace' },
+] as const;
+
+function DisclosureRow({ label, summary, open, onToggle }: { label: string; summary: string; open: boolean; onToggle: () => void }) {
+    return (
+        <ButtonBase onClick={onToggle} sx={designEditorStyles.inspector.sectionDisclosure}>
+            <Typography sx={designEditorStyles.inspector.sectionDisclosureLabel}>{label}</Typography>
+            <Typography sx={designEditorStyles.inspector.sectionDisclosureValue}>{open ? `Hide ${summary}` : summary}</Typography>
+        </ButtonBase>
+    );
+}
+
+function NodeHeader({ node, label, icon, onRename }: { node: DesignNode; label: string; icon: IconSvgElement; onRename: (nextValue: string) => void }) {
+    return (
+        <Box sx={designEditorStyles.inspector.nodeHeader}>
+            <Box sx={designEditorStyles.inspector.nodeHeaderRow}>
+                <Box sx={designEditorStyles.inspector.nodeHeaderIcon}>
+                    <HugeiconsIcon icon={icon} size={15} strokeWidth={0} />
+                </Box>
+
+                <PropertyChipInput value={node.name} onChange={onRename} placeholder="Layer name" />
+
+                <Box sx={designEditorStyles.inspector.nodeHeaderBadge}>{label}</Box>
+            </Box>
+        </Box>
+    );
+}
+
 function InspectorContent({ node }: { node: DesignNode }) {
     const patchNode = useDesignDocumentStore((state) => state.patchNode);
     const documentNodes = useDesignDocumentStore((state) => state.document?.nodes);
+    const [effectsOpen, setEffectsOpen] = useState(Boolean(node.style.shadow));
+    const [advancedOpen, setAdvancedOpen] = useState(false);
+
     const pagePaletteColors = useMemo(() => uniquePalette(
         Object.values(documentNodes ?? {}).flatMap((documentNode) => {
             const values = [documentNode.style.fill, documentNode.style.stroke ?? ""];
@@ -62,24 +92,17 @@ function InspectorContent({ node }: { node: DesignNode }) {
     const nodeMeta = getNodeMeta(node.type);
     const hasShadow = Boolean(node.style.shadow);
     const shadow = node.style.shadow ?? designEditorDefaults.shadows.mergeFallback;
+    const canUseHugSizing = node.type === "frame" && node.layoutMode === "auto";
+    const showContentSection = node.type === "text" || node.type === "image" || node.type === "component-instance";
 
     return (
-        <Stack spacing={0.95}>
-            <InspectorSection
-                title="Identity"
-                icon={nodeMeta.icon}
-                meta={<Box sx={designEditorStyles.inspector.metaPill}>{nodeMeta.label}</Box>}
-            >
-                <PropertyChipInput value={node.name} onChange={(nextValue) => patchNode(node.id, { name: nextValue })} placeholder="Layer name" />
-                <Box sx={designEditorStyles.inspector.identityRow}>
-                    <IconValueField label="Type" value={nodeMeta.label} icon={nodeMeta.icon} />
-                    <IconValueField label="Node ID" value={node.id.slice(0, 8)} icon={Layers01Icon} />
-                </Box>
-            </InspectorSection>
+        <Stack spacing={0}>
+            <NodeHeader node={node} label={nodeMeta.label} icon={nodeMeta.icon} onRename={(nextValue) => patchNode(node.id, { name: nextValue })} />
 
-            <InspectorSection title="Position / Layout" icon={Layout01Icon}>
+            <InspectorSection title="Layout" icon={Layout01Icon}>
                 {node.type === "frame" ? (
                     <SegmentedIconControl
+                        dense
                         value={node.layoutMode}
                         onChange={(nextValue) => patchNode(node.id, { layoutMode: nextValue })}
                         options={[
@@ -89,34 +112,66 @@ function InspectorContent({ node }: { node: DesignNode }) {
                     />
                 ) : null}
 
-                <Box sx={designEditorStyles.inspector.metricGrid3}>
-                    <PropertyNumberInput label="X" value={node.x} onChange={(nextValue) => patchNode(node.id, { x: nextValue })} icon={MoveIcon} />
-                    <PropertyNumberInput label="Y" value={node.y} onChange={(nextValue) => patchNode(node.id, { y: nextValue })} icon={MoveIcon} />
+                <Box sx={designEditorStyles.inspector.metricGrid2}>
+                    <PropertyNumberInput label="X" value={node.x} onChange={(nextValue) => patchNode(node.id, { x: nextValue })} />
+                    <PropertyNumberInput label="Y" value={node.y} onChange={(nextValue) => patchNode(node.id, { y: nextValue })} />
+                </Box>
+
+                <Stack spacing={0.55}>
+                    <SizeConstraintControl
+                        label="W"
+                        mode={node.sizing.width.mode}
+                        value={node.width}
+                        minValue={node.sizing.width.min}
+                        maxValue={node.sizing.width.max}
+                        allowFill={Boolean(node.parentId)}
+                        allowHug={canUseHugSizing}
+                        onModeChange={(nextValue) => patchNode(node.id, { sizing: { width: { mode: nextValue } } })}
+                        onValueChange={(nextValue) => patchNode(node.id, { width: Math.max(1, nextValue) })}
+                        onMinChange={(nextValue) => patchNode(node.id, { sizing: { width: { min: nextValue } } })}
+                        onMaxChange={(nextValue) => patchNode(node.id, { sizing: { width: { max: nextValue } } })}
+                    />
+
+                    <SizeConstraintControl
+                        label="H"
+                        mode={node.sizing.height.mode}
+                        value={node.height}
+                        minValue={node.sizing.height.min}
+                        maxValue={node.sizing.height.max}
+                        allowFill={Boolean(node.parentId)}
+                        allowHug={canUseHugSizing}
+                        onModeChange={(nextValue) => patchNode(node.id, { sizing: { height: { mode: nextValue } } })}
+                        onValueChange={(nextValue) => patchNode(node.id, { height: Math.max(1, nextValue) })}
+                        onMinChange={(nextValue) => patchNode(node.id, { sizing: { height: { min: nextValue } } })}
+                        onMaxChange={(nextValue) => patchNode(node.id, { sizing: { height: { max: nextValue } } })}
+                    />
+                </Stack>
+
+                <Box sx={designEditorStyles.inspector.metricGrid2}>
                     <PropertyNumberInput label="Rotation" value={node.rotation} onChange={(nextValue) => patchNode(node.id, { rotation: nextValue })} unit="deg" />
+                    <PropertyNumberInput
+                        label="Opacity"
+                        value={Math.round(node.style.opacity * 100)}
+                        onChange={(nextValue) => patchNode(node.id, { style: { opacity: Math.min(1, Math.max(0, nextValue / 100)) } })}
+                        unit="%"
+                        min={0}
+                    />
                 </Box>
 
-                <Box sx={designEditorStyles.inspector.metricGrid3}>
-                    <PropertyNumberInput label="Width" value={node.width} onChange={(nextValue) => patchNode(node.id, { width: Math.max(1, nextValue) })} icon={SquareIcon} min={1} />
-                    <PropertyNumberInput label="Height" value={node.height} onChange={(nextValue) => patchNode(node.id, { height: Math.max(1, nextValue) })} icon={SquareIcon} min={1} />
-                    <PropertyNumberInput label="Opacity" value={Math.round(node.style.opacity * 100)} onChange={(nextValue) => patchNode(node.id, { style: { opacity: Math.min(1, Math.max(0, nextValue / 100)) } })} icon={AlphaSquareIcon} unit="%" min={0} />
-                </Box>
-            </InspectorSection>
+                {isFrameNode(node) ? (
+                    <LinkedSpacingControl
+                        label="Padding"
+                        value={node.layoutMode === "auto" ? node.autoLayout.padding : node.padding}
+                        onChange={(nextValue) => patchNode(node.id, node.layoutMode === "auto"
+                            ? { autoLayout: { padding: nextValue } }
+                            : { padding: nextValue })}
+                    />
+                ) : null}
 
-            {isFrameNode(node) && node.layoutMode === "auto" ? (
-                <InspectorSection title="Auto Layout" icon={MenuTwoLineIcon} meta={<Box sx={designEditorStyles.inspector.metaPillStrong}>Primary</Box>}>
-                    <Box >
-                        <Box sx={designEditorStyles.inspector.autoLayoutHero}>
-                            <Stack spacing={0.8} sx={{ minWidth: 0 }}>
-                                <Typography sx={designEditorStyles.inspector.autoLayoutTitle}>Stack behavior</Typography>
-                                <Typography sx={designEditorStyles.inspector.autoLayoutBody}>Control direction, packing and internal padding from one dense surface.</Typography>
-                            </Stack>
-                            <Stack direction="row" spacing={0.55} alignItems="center">
-                                <TogglePill label={node.clipContent ? "Clip" : "Visible"} active={node.clipContent} onClick={() => patchNode(node.id, { clipContent: !node.clipContent })} />
-                                <TogglePill label={node.autoLayout.alignItems === "stretch" ? "Stretch" : "Auto"} active={node.autoLayout.alignItems === "stretch"} onClick={() => patchNode(node.id, { autoLayout: { alignItems: node.autoLayout.alignItems === "stretch" ? "center" : "stretch" } })} />
-                            </Stack>
-                        </Box>
-
+                {isFrameNode(node) && node.layoutMode === "auto" ? (
+                    <>
                         <SegmentedIconControl
+                            dense
                             value={node.autoLayout.direction}
                             onChange={(nextValue) => patchNode(node.id, { autoLayout: { direction: nextValue } })}
                             options={[
@@ -125,29 +180,23 @@ function InspectorContent({ node }: { node: DesignNode }) {
                             ]}
                         />
 
-                        <Box  >
-                       
+                        <AlignmentMatrixControl
+                            direction={node.autoLayout.direction}
+                            justifyContent={node.autoLayout.justifyContent === "space-between" ? "center" : node.autoLayout.justifyContent}
+                            alignItems={node.autoLayout.alignItems === "stretch" ? "center" : node.autoLayout.alignItems}
+                            onChange={(nextValue) => patchNode(node.id, { autoLayout: nextValue })}
+                        />
 
-                            <AlignmentMatrixControl
-                                direction={node.autoLayout.direction}
-                                justifyContent={node.autoLayout.justifyContent === "space-between" ? "center" : node.autoLayout.justifyContent}
-                                alignItems={node.autoLayout.alignItems === "stretch" ? "center" : node.autoLayout.alignItems}
-                                onChange={(nextValue) => patchNode(node.id, { autoLayout: nextValue })}
-                            />
+                        <PropertyNumberInput label="Gap" value={node.autoLayout.gap} onChange={(nextValue) => patchNode(node.id, { autoLayout: { gap: Math.max(0, nextValue) } })} min={0} />
 
-                            <Box sx={designEditorStyles.inspector.metricGrid2}>
-                                <PropertyNumberInput label="Gap" value={node.autoLayout.gap} onChange={(nextValue) => patchNode(node.id, { autoLayout: { gap: Math.max(0, nextValue) } })} icon={MenuTwoLineIcon} min={0} />
-                                <IconValueField label="Overflow" value={node.clipContent ? "Clipped" : "Visible"} icon={ViewIcon} />
-                            </Box>
-                        </Box>
-
-                        <LinkedSpacingControl label="Padding" value={node.autoLayout.padding} onChange={(nextValue) => patchNode(node.id, { autoLayout: { padding: nextValue } })} />
-                    </Box>
-                </InspectorSection>
-            ) : null}
+                        <ToggleSwitchRow label="Clip content" checked={node.clipContent} onChange={(checked) => patchNode(node.id, { clipContent: checked })} />
+                    </>
+                ) : null}
+            </InspectorSection>
 
             <InspectorSection title="Appearance" icon={DropletIcon}>
                 <FillRowControl title="Fill" value={node.style.fill} paletteColors={pagePaletteColors} onChange={(nextValue) => patchNode(node.id, { style: { fill: nextValue } })} />
+
                 <StrokeRowControl
                     value={node.style.stroke ?? ""}
                     width={node.style.strokeWidth}
@@ -156,103 +205,136 @@ function InspectorContent({ node }: { node: DesignNode }) {
                     onWidthChange={(nextValue) => patchNode(node.id, { style: { strokeWidth: Math.max(0, nextValue) } })}
                 />
 
-                <Box sx={designEditorStyles.inspector.metricGrid3}>
-                    <PropertyNumberInput label="Radius" value={node.style.borderRadius} onChange={(nextValue) => patchNode(node.id, { style: { borderRadius: Math.max(0, nextValue) } })} icon={SquareIcon} min={0} />
-                    <PropertyNumberInput label="Shadow X" value={shadow.x} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, x: nextValue } } })} icon={PaintBrush02Icon} />
-                    <PropertyNumberInput label="Blur" value={shadow.blur} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, blur: Math.max(0, nextValue) } } })} icon={PaintBrush02Icon} min={0} />
-                </Box>
+                <PropertyNumberInput label="Radius" value={node.style.borderRadius} onChange={(nextValue) => patchNode(node.id, { style: { borderRadius: Math.max(0, nextValue) } })} min={0} />
 
-                <Stack direction="row" spacing={0.55}>
-                    <TogglePill label={hasShadow ? "Shadow on" : "Shadow off"} active={hasShadow} onClick={() => patchNode(node.id, { style: { shadow: hasShadow ? null : designEditorDefaults.shadows.mergeFallback } })} />
-                    <TogglePill
-                        label={node.style.stroke ? "Stroke on" : "Stroke off"}
-                        active={Boolean(node.style.stroke)}
-                        onClick={() => patchNode(node.id, {
-                            style: {
-                                stroke: node.style.stroke ? null : "rgba(255,255,255,0.14)",
-                                strokeWidth: node.style.stroke ? node.style.strokeWidth : Math.max(1, node.style.strokeWidth),
-                            },
-                        })}
-                    />
-                </Stack>
+                <DisclosureRow label="Effects" summary={hasShadow ? "1 shadow" : "None"} open={effectsOpen} onToggle={() => setEffectsOpen((current) => !current)} />
+
+                <Collapse in={effectsOpen}>
+                    <Stack spacing={0.7} sx={{ pt: 0.7 }}>
+                        <ToggleSwitchRow label="Shadow" checked={hasShadow} onChange={(checked) => patchNode(node.id, { style: { shadow: checked ? shadow : null } })} />
+
+                        {hasShadow ? (
+                            <>
+                                <Box sx={designEditorStyles.inspector.metricGrid2}>
+                                    <PropertyNumberInput label="X" value={shadow.x} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, x: nextValue } } })} />
+                                    <PropertyNumberInput label="Y" value={shadow.y} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, y: nextValue } } })} />
+                                </Box>
+
+                                <Box sx={designEditorStyles.inspector.metricGrid2}>
+                                    <PropertyNumberInput label="Blur" value={shadow.blur} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, blur: Math.max(0, nextValue) } } })} min={0} />
+                                    <PropertyNumberInput label="Spread" value={shadow.spread} onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, spread: nextValue } } })} />
+                                </Box>
+
+                                <DesignColorControl
+                                    title="Shadow"
+                                    value={shadow.color}
+                                    paletteColors={pagePaletteColors}
+                                    onChange={(nextValue) => patchNode(node.id, { style: { shadow: { ...shadow, color: nextValue } } })}
+                                />
+                            </>
+                        ) : null}
+                    </Stack>
+                </Collapse>
             </InspectorSection>
 
-            {node.type === "text" ? (
-                <InspectorSection title="Text" icon={InputTextIcon}>
-                    <PropertyChipInput value={node.text} multiline onChange={(nextValue) => patchNode(node.id, { text: nextValue })} placeholder="Text content" />
-                    <Box sx={designEditorStyles.inspector.metricGrid3}>
-                        <PropertyNumberInput label="Size" value={node.style.typography?.fontSize ?? 16} onChange={(nextValue) => patchNode(node.id, { style: { typography: { fontSize: nextValue } } })} min={1} />
-                        <PropertyNumberInput label="Weight" value={node.style.typography?.fontWeight ?? 400} onChange={(nextValue) => patchNode(node.id, { style: { typography: { fontWeight: nextValue } } })} min={100} />
-                        <PropertyNumberInput label="Line" value={node.style.typography?.lineHeight ?? 1.5} onChange={(nextValue) => patchNode(node.id, { style: { typography: { lineHeight: nextValue } } })} min={0} />
-                    </Box>
+            {showContentSection ? (
+                <InspectorSection title="Content" icon={node.type === "text" ? InputTextIcon : node.type === "image" ? Image01Icon : PackageIcon}>
+                    {node.type === "text" ? (
+                        <>
+                            <PropertyChipInput value={node.text} multiline onChange={(nextValue) => patchNode(node.id, { text: nextValue })} placeholder="Text content" />
 
-                    <SegmentedIconControl
-                        value={node.style.typography?.textAlign ?? "left"}
-                        onChange={(nextValue) => patchNode(node.id, { style: { typography: { textAlign: nextValue } } })}
-                        options={[
-                            { value: "left", label: "Left", icon: <HugeiconsIcon icon={TextAlignLeftIcon} size={16} strokeWidth={0} /> },
-                            { value: "center", label: "Center", icon: <HugeiconsIcon icon={TextAlignCenterIcon} size={16} strokeWidth={0} /> },
-                            { value: "right", label: "Right", icon: <HugeiconsIcon icon={TextAlignRightIcon} size={16} strokeWidth={0} /> },
-                        ]}
-                        dense
-                    />
+                            <Box sx={designEditorStyles.inspector.metricGrid3}>
+                                <PropertyNumberInput label="Size" value={node.style.typography?.fontSize ?? 16} onChange={(nextValue) => patchNode(node.id, { style: { typography: { fontSize: nextValue } } })} min={1} />
+                                <PropertySelectInput
+                                    label="Weight"
+                                    value={node.style.typography?.fontWeight ?? 400}
+                                    onChange={(nextValue) => patchNode(node.id, { style: { typography: { fontWeight: nextValue } } })}
+                                    options={TEXT_FONT_WEIGHT_OPTIONS.map((value) => ({ value, label: String(value) }))}
+                                />
+                                <PropertyNumberInput label="Line" value={node.style.typography?.lineHeight ?? 1.5} onChange={(nextValue) => patchNode(node.id, { style: { typography: { lineHeight: nextValue } } })} min={0} />
+                            </Box>
 
-                    <DesignColorControl
-                        title="Text Color"
-                        value={node.style.typography?.color ?? designEditorDefaults.typography.color}
-                        paletteColors={pagePaletteColors}
-                        onChange={(nextValue) => patchNode(node.id, { style: { typography: { color: nextValue } } })}
-                    />
-                </InspectorSection>
-            ) : null}
+                            <PropertySelectInput
+                                label="Typography"
+                                value={node.style.typography?.fontFamily ?? designEditorDefaults.typography.fontFamily}
+                                onChange={(nextValue) => patchNode(node.id, { style: { typography: { fontFamily: nextValue } } })}
+                                options={[...TEXT_FONT_FAMILY_OPTIONS]}
+                            />
 
-            {node.type === "image" ? (
-                <InspectorSection title="Image" icon={Image01Icon}>
-                    <PropertyChipInput value={node.src} onChange={(nextValue) => patchNode(node.id, { src: nextValue, style: { image: { src: nextValue } } })} placeholder="Image source" />
-                    <SegmentedIconControl
-                        dense
-                        value={node.style.image?.objectFit ?? "cover"}
-                        onChange={(nextValue) => patchNode(node.id, { style: { image: { objectFit: nextValue } } })}
-                        options={[
-                            { value: "cover", label: "Cover" },
-                            { value: "contain", label: "Contain" },
-                            { value: "fill", label: "Fill" },
-                        ]}
-                    />
-                </InspectorSection>
-            ) : null}
+                            <SegmentedIconControl
+                                dense
+                                value={node.style.typography?.textAlign ?? "left"}
+                                onChange={(nextValue) => patchNode(node.id, { style: { typography: { textAlign: nextValue } } })}
+                                options={[
+                                    { value: "left", label: "Left", icon: <HugeiconsIcon icon={TextAlignLeftIcon} size={15} strokeWidth={0} /> },
+                                    { value: "center", label: "Center", icon: <HugeiconsIcon icon={TextAlignCenterIcon} size={15} strokeWidth={0} /> },
+                                    { value: "right", label: "Right", icon: <HugeiconsIcon icon={TextAlignRightIcon} size={15} strokeWidth={0} /> },
+                                ]}
+                            />
 
-            {isFrameNode(node) ? (
-                <InspectorSection title="Frame extras" icon={ViewIcon}>
-                    <Box sx={designEditorStyles.inspector.toggleRowGroup}>
-                        <ToggleSwitchRow label="Clip content" checked={node.clipContent} onChange={(checked) => patchNode(node.id, { clipContent: checked })} />
-                        <ToggleSwitchRow label="Auto layout" checked={node.layoutMode === "auto"} onChange={(checked) => patchNode(node.id, { layoutMode: checked ? "auto" : "absolute" })} />
-                    </Box>
+                            <DesignColorControl
+                                title="Background"
+                                value={node.style.fill}
+                                paletteColors={pagePaletteColors}
+                                onChange={(nextValue) => patchNode(node.id, { style: { fill: nextValue } })}
+                            />
 
-                    {node.layoutMode === "absolute" ? (
-                        <LinkedSpacingControl label="Frame padding" value={node.padding} onChange={(nextValue) => patchNode(node.id, { padding: nextValue })} />
+                            <DesignColorControl
+                                title="Text Color"
+                                value={node.style.typography?.color ?? designEditorDefaults.typography.color}
+                                paletteColors={pagePaletteColors}
+                                onChange={(nextValue) => patchNode(node.id, { style: { typography: { color: nextValue } } })}
+                            />
+                        </>
+                    ) : null}
+
+                    {node.type === "image" ? (
+                        <>
+                            <PropertyChipInput value={node.src} onChange={(nextValue) => patchNode(node.id, { src: nextValue, style: { image: { src: nextValue } } })} placeholder="Image source" />
+                            <SegmentedIconControl
+                                dense
+                                value={node.style.image?.objectFit ?? "cover"}
+                                onChange={(nextValue) => patchNode(node.id, { style: { image: { objectFit: nextValue } } })}
+                                options={[
+                                    { value: "cover", label: "Cover" },
+                                    { value: "contain", label: "Contain" },
+                                    { value: "fill", label: "Fill" },
+                                ]}
+                            />
+                        </>
+                    ) : null}
+
+                    {node.type === "component-instance" ? (
+                        <>
+                            <IconValueField label="Component set" value={node.componentSetId.slice(0, 8)} icon={PackageIcon} />
+                            <IconValueField label="Variant" value={node.variantId.slice(0, 8)} icon={Layers01Icon} />
+                        </>
                     ) : null}
                 </InspectorSection>
             ) : null}
 
-            {node.type === "group" ? (
-                <InspectorSection title="Group" icon={HierarchySquare01Icon}>
-                    <Typography sx={designEditorStyles.inspector.noteText}>Groups keep visual items together but do not add auto layout behavior.</Typography>
-                </InspectorSection>
-            ) : null}
+            <InspectorSection title="Advanced" icon={Layers01Icon}>
+                <DisclosureRow label="Metadata" summary={advancedOpen ? "Visible" : "Hidden"} open={advancedOpen} onToggle={() => setAdvancedOpen((current) => !current)} />
 
-            {node.type === "component-instance" ? (
-                <InspectorSection title="Component instance" icon={PackageIcon}>
-                    <IconValueField label="Component set" value={node.componentSetId.slice(0, 8)} icon={PackageIcon} />
-                    <IconValueField label="Variant" value={node.variantId.slice(0, 8)} icon={Layers01Icon} />
-                </InspectorSection>
-            ) : null}
+                <Collapse in={advancedOpen}>
+                    <Stack spacing={0.7} sx={{ pt: 0.7 }}>
+                        <IconValueField label="Node ID" value={node.id} icon={Layers01Icon} />
+                        <IconValueField label="Type" value={nodeMeta.label} icon={nodeMeta.icon} />
+                        {node.parentId ? <IconValueField label="Parent" value={node.parentId} icon={Layout01Icon} /> : null}
 
-            {(node.type === "rectangle" || node.type === "svg-asset") ? (
-                <InspectorSection title="Shape" icon={node.type === "rectangle" ? SquareIcon : PaintBrush02Icon}>
-                    <Typography sx={designEditorStyles.inspector.noteText}>This node uses the shared appearance controls above, optimized for direct visual tweaking.</Typography>
-                </InspectorSection>
-            ) : null}
+                        {node.type === "component-instance" ? (
+                            <>
+                                <IconValueField label="Component set" value={node.componentSetId} icon={PackageIcon} />
+                                <IconValueField label="Variant" value={node.variantId} icon={Layers01Icon} />
+                            </>
+                        ) : null}
+
+                        {node.type === "svg-asset" ? (
+                            <Typography sx={designEditorStyles.inspector.noteText}>SVG assets keep their raw markup and diagnostics in the document model.</Typography>
+                        ) : null}
+                    </Stack>
+                </Collapse>
+            </InspectorSection>
         </Stack>
     );
 }
@@ -269,16 +351,16 @@ export function DesignInspectorPanel() {
     if (selectedNodeIds.length > 1) {
         return (
             <Box sx={designEditorStyles.inspector.panelRoot}>
-                <Stack spacing={0.6} sx={designEditorStyles.inspector.panelHeader}>
+                <Stack spacing={0.35} sx={designEditorStyles.inspector.panelHeader}>
                     <Typography sx={designEditorStyles.inspector.panelEyebrow}>Inspector</Typography>
                     <Typography sx={designEditorStyles.inspector.panelBodyText}>Selección múltiple activa.</Typography>
                 </Stack>
 
                 <Box sx={designEditorStyles.inspector.panelBody}>
-                    <Stack spacing={1.2} sx={designEditorStyles.inspector.multiSelectionCard}>
+                    <Stack spacing={0.7} sx={designEditorStyles.inspector.multiSelectionCard}>
                         <Typography sx={designEditorStyles.inspector.multiSelectionEyebrow}>Multi Selection</Typography>
                         <Typography sx={designEditorStyles.inspector.multiSelectionCount}>{selectedNodeIds.length} elementos seleccionados</Typography>
-                        <Typography sx={designEditorStyles.inspector.multiSelectionBody}>Usa Cmd+G o Ctrl+G para crear un group cuando todos pertenezcan al mismo contenedor.</Typography>
+                        <Typography sx={designEditorStyles.inspector.multiSelectionBody}>Usa Cmd+G o Ctrl+G para agrupar cuando todos pertenezcan al mismo contenedor.</Typography>
                     </Stack>
                 </Box>
             </Box>
@@ -293,9 +375,9 @@ export function DesignInspectorPanel() {
 
     return (
         <Box sx={designEditorStyles.inspector.panelRoot}>
-            <Stack spacing={0.6} sx={designEditorStyles.inspector.panelHeader}>
+            <Stack spacing={0.35} sx={designEditorStyles.inspector.panelHeader}>
                 <Typography sx={designEditorStyles.inspector.panelEyebrow}>Inspector</Typography>
-                <Typography sx={designEditorStyles.inspector.panelBodyText}>{selectedNodeId ? "Propiedades del elemento seleccionado." : "Propiedades del documento y frame raíz."}</Typography>
+                <Typography sx={designEditorStyles.inspector.panelBodyText}>{selectedNodeId ? "Edición contextual del elemento seleccionado." : "Edición del frame raíz del documento."}</Typography>
             </Stack>
 
             <Box sx={designEditorStyles.inspector.panelBody}>
@@ -310,7 +392,7 @@ function getNodeMeta(nodeType: DesignNode["type"]): { label: string; icon: IconS
         case "frame":
             return { label: "Frame", icon: Layout01Icon };
         case "group":
-            return { label: "Group", icon: HierarchySquare01Icon };
+            return { label: "Group", icon: Layers01Icon };
         case "rectangle":
             return { label: "Rectangle", icon: SquareIcon };
         case "text":

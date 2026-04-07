@@ -7,6 +7,7 @@ import {
     DESIGN_IMAGE_OBJECT_FITS,
     DESIGN_LAYOUT_MODES,
     DESIGN_NODE_TYPES,
+    DESIGN_SIZE_MODES,
     DESIGN_TEXT_ALIGNS,
 } from "@/src/features/design-editor/types/design.types";
 
@@ -62,6 +63,25 @@ export const designAutoLayoutSchema = z.object({
     }),
 });
 
+export const designNodeAxisSizingSchema = z.object({
+    mode: z.enum(DESIGN_SIZE_MODES).default("fixed"),
+    min: z.number().min(0).nullable().default(null),
+    max: z.number().min(0).nullable().default(null),
+});
+
+export const designNodeSizingSchema = z.object({
+    width: designNodeAxisSizingSchema.default({
+        mode: "fixed",
+        min: null,
+        max: null,
+    }),
+    height: designNodeAxisSizingSchema.default({
+        mode: "fixed",
+        min: null,
+        max: null,
+    }),
+});
+
 export const designNodeStyleSchema = z.object({
     fill: z.string().min(1),
     stroke: z.string().min(1).nullable(),
@@ -82,6 +102,18 @@ const designNodeBaseSchema = z.object({
     y: z.number(),
     width: z.number().positive(),
     height: z.number().positive(),
+    sizing: designNodeSizingSchema.default({
+        width: {
+            mode: "fixed",
+            min: null,
+            max: null,
+        },
+        height: {
+            mode: "fixed",
+            min: null,
+            max: null,
+        },
+    }),
     rotation: z.number(),
     visible: z.boolean(),
     locked: z.boolean(),

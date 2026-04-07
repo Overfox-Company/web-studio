@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
@@ -13,19 +13,140 @@ import {
     AlignBoxTopCenterIcon,
     AlignBoxTopLeftIcon,
     AlignBoxTopRightIcon,
+    HorizonalScrollPointIcon,
 } from "@hugeicons-pro/core-solid-standard";
-import { Box, ButtonBase, Stack, Switch, TextField, Typography } from "@mui/material";
+import {
+    BorderBottom02Icon,
+    BorderLeft02Icon,
+    BorderRight02Icon,
+    BorderTop02Icon,
+} from "@hugeicons-pro/core-twotone-rounded";
+import { Box, ButtonBase, Collapse, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
 
 import { designEditorStyles } from "@/src/customization/design-editor";
 import { DesignColorControl } from "@/src/features/design-editor/components/DesignColorControl";
-import type { DesignAutoLayoutAlign, DesignAutoLayoutDirection, DesignAutoLayoutJustify, DesignPadding } from "@/src/features/design-editor/types/design.types";
+import type { DesignAutoLayoutAlign, DesignAutoLayoutDirection, DesignAutoLayoutJustify, DesignPadding, DesignSizeMode } from "@/src/features/design-editor/types/design.types";
+
+const DRAG_SENSITIVITY_PX = 4;
+
+function clampNumericValue(nextValue: number, min?: number) {
+    return min == null ? nextValue : Math.max(min, nextValue);
+}
+
+function DraggableNumberField({
+    value,
+    onChange,
+    disabled = false,
+    min,
+    unit,
+    dragIcon = HorizonalScrollPointIcon,
+    placeholder,
+}: {
+    value: number | null;
+    onChange: (nextValue: number | null) => void;
+    disabled?: boolean;
+    min?: number;
+    unit?: string;
+    dragIcon?: IconSvgElement;
+    placeholder?: string;
+}) {
+    const [dragState, setDragState] = useState<{
+        startClientX: number;
+        initialValue: number;
+    } | null>(null);
+
+    useEffect(() => {
+        if (!dragState) {
+            return;
+        }
+
+        const currentDragState = dragState;
+
+        function handlePointerMove(event: PointerEvent) {
+            const deltaSteps = Math.trunc((event.clientX - currentDragState.startClientX) / DRAG_SENSITIVITY_PX);
+            const nextValue = clampNumericValue(currentDragState.initialValue + deltaSteps, min);
+
+            if (nextValue !== value) {
+                onChange(nextValue);
+            }
+        }
+
+        function handlePointerUp() {
+            setDragState(null);
+        }
+
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp, { once: true });
+
+        return () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+        };
+    }, [dragState, min, onChange, value]);
+
+    function beginDrag(event: React.PointerEvent<HTMLButtonElement>) {
+        if (disabled) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        setDragState({
+            startClientX: event.clientX,
+            initialValue: value ?? 0,
+        });
+    }
+
+    return (
+        <Box sx={designEditorStyles.inspector.metricField}>
+            <ButtonBase
+                onPointerDown={beginDrag}
+                disabled={disabled}
+                sx={{
+                    ...designEditorStyles.inspector.metricIcon,
+                    cursor: disabled ? "default" : "ew-resize",
+                    touchAction: "none",
+                    pointerEvents: disabled ? "none" : "auto",
+                    userSelect: "none",
+                }}
+            >
+                <HugeiconsIcon icon={dragIcon} size={12} strokeWidth={0} />
+            </ButtonBase>
+
+            <TextField
+                type="number"
+                value={value ?? ""}
+                disabled={disabled}
+                placeholder={placeholder}
+                onChange={(event) => {
+                    if (event.target.value === "") {
+                        onChange(null);
+                        return;
+                    }
+
+                    const nextValue = Number(event.target.value);
+
+                    if (Number.isNaN(nextValue) || nextValue === value) {
+                        return;
+                    }
+
+                    onChange(clampNumericValue(nextValue, min));
+                }}
+                sx={designEditorStyles.inspector.metricInput}
+            />
+
+            {unit ? <Typography sx={designEditorStyles.inspector.metricUnit}>{unit}</Typography> : null}
+        </Box>
+    );
+}
 
 export function InspectorSectionHeader({ title, icon, meta }: { title: string; icon: IconSvgElement; meta?: React.ReactNode }) {
     return (
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={designEditorStyles.inspector.sectionHeader}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
                 <Box sx={designEditorStyles.inspector.sectionIconBadge}>
-                    <HugeiconsIcon icon={icon} size={15} strokeWidth={0} />
+                        <HugeiconsIcon icon={icon} size={14} strokeWidth={0} />
                 </Box>
                 <Typography sx={designEditorStyles.inspector.sectionTitle}>{title}</Typography>
             </Stack>
@@ -36,9 +157,9 @@ export function InspectorSectionHeader({ title, icon, meta }: { title: string; i
 
 export function InspectorSection({ title, icon, meta, children }: { title: string; icon: IconSvgElement; meta?: React.ReactNode; children: React.ReactNode }) {
     return (
-        <Stack spacing={1.2} sx={designEditorStyles.inspector.section}>
+            <Stack spacing={0.8} sx={designEditorStyles.inspector.section}>
             <InspectorSectionHeader title={title} icon={icon} meta={meta} />
-            <Stack spacing={1.05}>{children}</Stack>
+                <Stack spacing={0.75}>{children}</Stack>
         </Stack>
     );
 }
@@ -53,7 +174,7 @@ export function PropertyChipInput({ value, onChange, placeholder, multiline = fa
             value={value}
             placeholder={placeholder}
             multiline={multiline}
-            minRows={multiline ? 3 : undefined}
+            minRows={multiline ? 2 : undefined}
             onChange={(event) => {
                 const nextValue = event.target.value;
 
@@ -72,54 +193,109 @@ export function PropertyNumberInput({
     value,
     onChange,
     label,
-    icon,
     unit,
     min,
+    disabled = false,
+    dragIcon,
 }: {
     value: number;
     onChange: (nextValue: number) => void;
     label?: string;
-    icon?: IconSvgElement;
     unit?: string;
     min?: number;
+    disabled?: boolean;
+    dragIcon?: IconSvgElement;
 }) {
     return (
-        <Stack spacing={0.45}>
+        <Stack spacing={0.32}>
+            {label ? <FieldLabel label={label} /> : null}
+            <DraggableNumberField
+                value={value}
+                disabled={disabled}
+                min={min}
+                unit={unit}
+                dragIcon={dragIcon}
+                onChange={(nextValue) => {
+                    if (nextValue == null || nextValue === value) {
+                        return;
+                    }
+
+                    onChange(nextValue);
+                }}
+            />
+        </Stack>
+    );
+}
+
+export function PropertySelectInput<T extends string | number>({
+    value,
+    onChange,
+    label,
+    options,
+}: {
+    value: T;
+    onChange: (nextValue: T) => void;
+    label?: string;
+    options: Array<{ value: T; label: string; previewFontFamily?: string }>;
+}) {
+    return (
+        <Stack spacing={0.32}>
             {label ? <FieldLabel label={label} /> : null}
             <Box sx={designEditorStyles.inspector.metricField}>
-                {icon ? (
-                    <Box sx={designEditorStyles.inspector.metricIcon}>
-                        <HugeiconsIcon icon={icon} size={14} strokeWidth={0} />
-                    </Box>
-                ) : null}
                 <TextField
-                    type="number"
+                    select
                     value={value}
                     onChange={(event) => {
-                        const nextValue = Number(event.target.value);
+                        const nextValue = options.find((option) => String(option.value) === event.target.value)?.value;
 
-                        if (Number.isNaN(nextValue) || nextValue === value) {
+                        if (nextValue == null || nextValue === value) {
                             return;
                         }
 
-                        onChange(min == null ? nextValue : Math.max(min, nextValue));
+                        onChange(nextValue);
                     }}
                     sx={designEditorStyles.inspector.metricInput}
-                />
-                {unit ? <Typography sx={designEditorStyles.inspector.metricUnit}>{unit}</Typography> : null}
+                >
+                    {options.map((option) => (
+                        <MenuItem key={String(option.value)} value={String(option.value)} sx={option.previewFontFamily ? { fontFamily: option.previewFontFamily } : undefined}>
+                            {option.label}
+                        </MenuItem>
+                    ))}
+                </TextField>
             </Box>
+        </Stack>
+    );
+}
+
+export function NullablePropertyNumberInput({
+    value,
+    onChange,
+    label,
+    min,
+    placeholder,
+}: {
+    value: number | null;
+    onChange: (nextValue: number | null) => void;
+    label?: string;
+    min?: number;
+    placeholder?: string;
+}) {
+    return (
+        <Stack spacing={0.32}>
+            {label ? <FieldLabel label={label} /> : null}
+            <DraggableNumberField value={value} onChange={onChange} min={min} placeholder={placeholder} />
         </Stack>
     );
 }
 
 export function IconValueField({ label, value, icon }: { label: string; value: string; icon?: IconSvgElement }) {
     return (
-        <Stack spacing={0.45}>
+        <Stack spacing={0.32}>
             <FieldLabel label={label} />
             <Box sx={designEditorStyles.inspector.metricFieldStatic}>
                 {icon ? (
                     <Box sx={designEditorStyles.inspector.metricIcon}>
-                        <HugeiconsIcon icon={icon} size={14} strokeWidth={0} />
+                        <HugeiconsIcon icon={icon} size={12} strokeWidth={0} />
                     </Box>
                 ) : null}
                 <Typography sx={designEditorStyles.inspector.metricStaticValue}>{value}</Typography>
@@ -170,16 +346,16 @@ const MATRIX_ITEMS: Array<{
     align: Exclude<DesignAutoLayoutAlign, "stretch">;
     icon: IconSvgElement;
 }> = [
-    { justify: "start", align: "start", icon: AlignBoxTopLeftIcon },
-    { justify: "center", align: "start", icon: AlignBoxTopCenterIcon },
-    { justify: "end", align: "start", icon: AlignBoxTopRightIcon },
-    { justify: "start", align: "center", icon: AlignBoxMiddleLeftIcon },
-    { justify: "center", align: "center", icon: AlignBoxMiddleCenterIcon },
-    { justify: "end", align: "center", icon: AlignBoxMiddleRightIcon },
-    { justify: "start", align: "end", icon: AlignBoxBottomLeftIcon },
-    { justify: "center", align: "end", icon: AlignBoxBottomCenterIcon },
-    { justify: "end", align: "end", icon: AlignBoxBottomRightIcon },
-];
+        { justify: "start", align: "start", icon: AlignBoxTopLeftIcon },
+        { justify: "center", align: "start", icon: AlignBoxTopCenterIcon },
+        { justify: "end", align: "start", icon: AlignBoxTopRightIcon },
+        { justify: "start", align: "center", icon: AlignBoxMiddleLeftIcon },
+        { justify: "center", align: "center", icon: AlignBoxMiddleCenterIcon },
+        { justify: "end", align: "center", icon: AlignBoxMiddleRightIcon },
+        { justify: "start", align: "end", icon: AlignBoxBottomLeftIcon },
+        { justify: "center", align: "end", icon: AlignBoxBottomCenterIcon },
+        { justify: "end", align: "end", icon: AlignBoxBottomRightIcon },
+    ];
 
 export function AlignmentMatrixControl({
     direction,
@@ -193,7 +369,7 @@ export function AlignmentMatrixControl({
     onChange: (nextValue: { justifyContent: DesignAutoLayoutJustify; alignItems: DesignAutoLayoutAlign }) => void;
 }) {
     return (
-        <Stack spacing={0.55}>
+        <Stack spacing={0.4}>
             <FieldLabel label={direction === "horizontal" ? "Content map" : "Stack map"} />
             <Box sx={designEditorStyles.inspector.matrixGrid}>
                 {MATRIX_ITEMS.map((item) => {
@@ -205,7 +381,7 @@ export function AlignmentMatrixControl({
                             onClick={() => onChange({ justifyContent: item.justify, alignItems: item.align })}
                             sx={designEditorStyles.inspector.matrixCell(isActive)}
                         >
-                            <HugeiconsIcon icon={item.icon} size={16} strokeWidth={0} />
+                            <HugeiconsIcon icon={item.icon} size={14} strokeWidth={0} />
                         </ButtonBase>
                     );
                 })}
@@ -225,6 +401,10 @@ export function LinkedSpacingControl({
 }) {
     const [isLinked, setIsLinked] = useState(value.top === value.right && value.top === value.bottom && value.top === value.left);
 
+    useEffect(() => {
+        setIsLinked(value.top === value.right && value.top === value.bottom && value.top === value.left);
+    }, [value.bottom, value.left, value.right, value.top]);
+
     function updateSide(side: keyof DesignPadding, nextValue: number) {
         if (isLinked) {
             onChange({ top: nextValue, right: nextValue, bottom: nextValue, left: nextValue });
@@ -235,25 +415,101 @@ export function LinkedSpacingControl({
     }
 
     return (
-        <Stack spacing={0.55}>
+        <Stack spacing={0.45}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <FieldLabel label={label} />
-                <TogglePill label={isLinked ? "Linked" : "Free"} active={isLinked} onClick={() => setIsLinked((current) => !current)} />
+                <TogglePill label={isLinked ? "Link" : "Free"} active={isLinked} onClick={() => setIsLinked((current) => !current)} />
             </Stack>
 
-            <Box sx={designEditorStyles.inspector.fourUpGrid}>
-                <PropertyNumberInput label="T" value={value.top} onChange={(nextValue) => updateSide("top", nextValue)} min={0} />
-                <PropertyNumberInput label="R" value={value.right} onChange={(nextValue) => updateSide("right", nextValue)} min={0} />
-                <PropertyNumberInput label="B" value={value.bottom} onChange={(nextValue) => updateSide("bottom", nextValue)} min={0} />
-                <PropertyNumberInput label="L" value={value.left} onChange={(nextValue) => updateSide("left", nextValue)} min={0} />
+            {isLinked ? (
+                <PropertyNumberInput value={value.top} onChange={(nextValue) => updateSide("top", nextValue)} min={0} />
+            ) : (
+                <Box sx={designEditorStyles.inspector.fourUpGrid}>
+                    <PropertyNumberInput value={value.top} onChange={(nextValue) => updateSide("top", nextValue)} min={0} dragIcon={BorderTop02Icon} />
+                    <PropertyNumberInput value={value.right} onChange={(nextValue) => updateSide("right", nextValue)} min={0} dragIcon={BorderRight02Icon} />
+                    <PropertyNumberInput value={value.bottom} onChange={(nextValue) => updateSide("bottom", nextValue)} min={0} dragIcon={BorderBottom02Icon} />
+                    <PropertyNumberInput value={value.left} onChange={(nextValue) => updateSide("left", nextValue)} min={0} dragIcon={BorderLeft02Icon} />
+                </Box>
+            )}
+        </Stack>
+    );
+}
+
+export function SizeConstraintControl({
+    label,
+    mode,
+    value,
+    minValue,
+    maxValue,
+    allowFill = true,
+    allowHug = false,
+    onModeChange,
+    onValueChange,
+    onMinChange,
+    onMaxChange,
+}: {
+    label: string;
+    mode: DesignSizeMode;
+    value: number;
+    minValue: number | null;
+    maxValue: number | null;
+    allowFill?: boolean;
+    allowHug?: boolean;
+    onModeChange: (nextValue: DesignSizeMode) => void;
+    onValueChange: (nextValue: number) => void;
+    onMinChange: (nextValue: number | null) => void;
+    onMaxChange: (nextValue: number | null) => void;
+}) {
+    const [showAdvanced, setShowAdvanced] = useState(Boolean(minValue != null || maxValue != null));
+    const options: Array<{ value: DesignSizeMode; label: string }> = [{ value: "fixed", label: "Fixed" }];
+
+    if (allowFill) {
+        options.push({ value: "fill", label: "Fill" });
+    }
+
+    if (allowHug) {
+        options.push({ value: "hug", label: "Hug" });
+    }
+
+    return (
+        <Stack spacing={0.45}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "20px minmax(0, 1fr) minmax(88px, auto)", gap: 0.5, alignItems: "center" }}>
+                <Typography sx={designEditorStyles.inspector.gridFieldLabel}>{label}</Typography>
+
+                <DraggableNumberField
+                    value={value}
+                    disabled={mode !== "fixed"}
+                    min={1}
+                    onChange={(nextValue) => {
+                        if (nextValue == null || nextValue === value) {
+                            return;
+                        }
+
+                        onValueChange(nextValue);
+                    }}
+                />
+
+                <SegmentedIconControl dense value={mode} onChange={onModeChange} options={options} />
             </Box>
+
+            <ButtonBase onClick={() => setShowAdvanced((current) => !current)} sx={designEditorStyles.inspector.sectionDisclosure}>
+                <Typography sx={designEditorStyles.inspector.sectionDisclosureLabel}>Advanced sizing</Typography>
+                <Typography sx={designEditorStyles.inspector.sectionDisclosureValue}>{showAdvanced ? "Hide" : "Show"}</Typography>
+            </ButtonBase>
+
+            <Collapse in={showAdvanced}>
+                <Box sx={designEditorStyles.inspector.metricGrid2}>
+                    <NullablePropertyNumberInput label="Min" value={minValue} onChange={onMinChange} min={0} placeholder="-" />
+                    <NullablePropertyNumberInput label="Max" value={maxValue} onChange={onMaxChange} min={0} placeholder="-" />
+                </Box>
+            </Collapse>
         </Stack>
     );
 }
 
 export function FillRowControl({ title, value, onChange, paletteColors }: { title: string; value: string; onChange: (nextValue: string) => void; paletteColors: string[] }) {
     return (
-        <Stack spacing={0.55}>
+        <Stack spacing={0.4}>
             <FieldLabel label={title} />
             <DesignColorControl title={title} value={value} paletteColors={paletteColors} allowGradient onChange={onChange} />
         </Stack>
@@ -275,7 +531,7 @@ export function StrokeRowControl({
 }) {
     return (
         <Box sx={designEditorStyles.inspector.twoColumnGridCompact}>
-            <Stack spacing={0.55}>
+            <Stack spacing={0.4}>
                 <FieldLabel label="Stroke" />
                 <DesignColorControl title="Stroke" value={value} paletteColors={paletteColors} allowEmpty onChange={onColorChange} />
             </Stack>
@@ -288,7 +544,7 @@ export function ToggleSwitchRow({ label, checked, onChange }: { label: string; c
     return (
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={designEditorStyles.inspector.toggleRow}>
             <Typography sx={designEditorStyles.inspector.toggleRowLabel}>{label}</Typography>
-            <Switch checked={checked} onChange={(event) => onChange(event.target.checked)} />
+            <Switch size="small" checked={checked} onChange={(event) => onChange(event.target.checked)} />
         </Stack>
     );
 }

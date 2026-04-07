@@ -21,9 +21,15 @@ export async function pasteFromClipboard({
     anchorPoint,
     insertSubtree,
 }: PasteFromClipboardOptions): Promise<ImportResult> {
+    console.log("[DesignClipboard] paste:start", {
+        targetParentId,
+        anchorPoint,
+    });
+
     const payload = await readClipboardPayload(event);
 
     if (!payload) {
+        console.log("[DesignClipboard] paste:no-payload");
         return {
             status: "unsupported",
             rootNodeIds: [],
@@ -34,7 +40,12 @@ export async function pasteFromClipboard({
 
     const detectedFormat = detectClipboardFormat(payload);
 
+    console.log("[DesignClipboard] paste:detected-format", detectedFormat);
+
     if (detectedFormat.kind === "unsupported") {
+        console.log("[DesignClipboard] paste:unsupported-format", {
+            availableTypes: payload.types,
+        });
         return {
             status: "unsupported",
             rootNodeIds: [],
@@ -46,6 +57,7 @@ export async function pasteFromClipboard({
     const routedImport = await routeClipboardImport(detectedFormat);
 
     if (!routedImport) {
+        console.log("[DesignClipboard] paste:no-routed-import");
         return {
             status: "unsupported",
             rootNodeIds: [],
@@ -58,7 +70,14 @@ export async function pasteFromClipboard({
         const importedAst = routedImport.importedDocument;
         const normalizedAst = normalizeImportedAst(importedAst);
 
+        console.log("[DesignClipboard] paste:normalized", {
+            adapterId: routedImport.adapterId,
+            rootCount: normalizedAst.roots.length,
+            warnings: normalizedAst.warnings,
+        });
+
         if (normalizedAst.roots.length === 0) {
+            console.log("[DesignClipboard] paste:no-normalized-roots");
             return {
                 status: "unsupported",
                 rootNodeIds: [],
@@ -75,12 +94,18 @@ export async function pasteFromClipboard({
             insertSubtree,
         });
 
+        console.log("[DesignClipboard] paste:success", {
+            rootNodeIds,
+            warnings: normalizedAst.warnings,
+        });
+
         return {
             status: "success",
             rootNodeIds,
             warnings: normalizedAst.warnings,
         };
-    } catch {
+    } catch (error) {
+        console.error("[DesignClipboard] paste:error", error);
         return {
             status: "error",
             rootNodeIds: [],

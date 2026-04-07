@@ -23,6 +23,18 @@ function createRootFrame(viewNodeId: string, viewName: string): DesignFrameNode 
         y: 0,
         width: ROOT_FRAME_SIZE.width,
         height: ROOT_FRAME_SIZE.height,
+        sizing: {
+            width: {
+                mode: "fixed",
+                min: null,
+                max: null,
+            },
+            height: {
+                mode: "fixed",
+                min: null,
+                max: null,
+            },
+        },
         rotation: 0,
         visible: true,
         locked: false,

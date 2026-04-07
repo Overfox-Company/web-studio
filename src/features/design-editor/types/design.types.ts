@@ -4,6 +4,9 @@ export type DesignNodeType = (typeof DESIGN_NODE_TYPES)[number];
 export const DESIGN_LAYOUT_MODES = ["absolute", "auto"] as const;
 export type DesignLayoutMode = (typeof DESIGN_LAYOUT_MODES)[number];
 
+export const DESIGN_SIZE_MODES = ["fixed", "fill", "hug"] as const;
+export type DesignSizeMode = (typeof DESIGN_SIZE_MODES)[number];
+
 export const DESIGN_AUTO_LAYOUT_DIRECTIONS = ["horizontal", "vertical"] as const;
 export type DesignAutoLayoutDirection = (typeof DESIGN_AUTO_LAYOUT_DIRECTIONS)[number];
 
@@ -24,6 +27,17 @@ export interface DesignPadding {
     right: number;
     bottom: number;
     left: number;
+}
+
+export interface DesignNodeAxisSizing {
+    mode: DesignSizeMode;
+    min: number | null;
+    max: number | null;
+}
+
+export interface DesignNodeSizing {
+    width: DesignNodeAxisSizing;
+    height: DesignNodeAxisSizing;
 }
 
 export interface DesignShadow {
@@ -87,6 +101,7 @@ interface DesignNodeBase<TType extends DesignNodeType> {
     y: number;
     width: number;
     height: number;
+    sizing: DesignNodeSizing;
     rotation: number;
     visible: boolean;
     locked: boolean;

@@ -6,6 +6,13 @@ import { Box, Typography } from "@mui/material";
 
 import { designEditorStyles, getDesignResizeHandleStyle } from "@/src/customization/design-editor";
 import { DesignDocumentRenderer } from "@/src/features/design-editor/components/DesignDocumentRenderer";
+import { DesignGapOverlay, type DesignGapSegment } from "@/src/features/design-editor/components/DesignGapOverlay";
+import { DesignPaddingOverlay } from "@/src/features/design-editor/components/DesignPaddingOverlay";
+import {
+    serializeSelectionToWebStudioClipboard,
+    storeWebStudioClipboardPayload,
+    WEBSTUDIO_DESIGN_JSON_MIME,
+} from "@/src/features/design-editor/import/adapters/webstudio-design-json.shared";
 import { pasteFromClipboard } from "@/src/features/design-editor/import/paste-from-clipboard";
 import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
@@ -19,7 +26,7 @@ import {
     type DesignResizeHandle,
     type DesignTool,
 } from "@/src/features/design-editor/types/interaction.types";
-import { computeAlignmentGuides } from "@/src/features/design-editor/utils/alignment-guides";
+import { computeAlignmentSnap } from "@/src/features/design-editor/utils/alignment-guides";
 import { createDesignNode } from "@/src/features/design-editor/utils/create-design-node";
 import { resolveDropTarget } from "@/src/features/design-editor/utils/drag-drop";
 import {
@@ -34,9 +41,17 @@ import {
 import type { PageViewportMode } from "@/src/features/project-editor/types/editor.types";
 
 const MIN_CREATION_SIZE = 24;
+const CREATE_DRAG_THRESHOLD = 4;
 const ZOOM_LIMITS = {
     min: 0.25,
     max: 2.5,
+};
+
+const DEFAULT_NODE_SIZES: Record<CreateInteractionSession["nodeType"], { width: number; height: number }> = {
+    frame: { width: 320, height: 220 },
+    rectangle: { width: 160, height: 120 },
+    text: { width: 160, height: 48 },
+    image: { width: 240, height: 180 },
 };
 
 function clampZoom(zoom: number) {
@@ -49,6 +64,18 @@ function normalizeFrame(start: DesignPoint, end: DesignPoint): DesignFrame {
         y: Math.min(start.y, end.y),
         width: Math.max(1, Math.abs(end.x - start.x)),
         height: Math.max(1, Math.abs(end.y - start.y)),
+        rotation: 0,
+    };
+}
+
+function createDefaultFrame(originPoint: DesignPoint, nodeType: CreateInteractionSession["nodeType"]): DesignFrame {
+    const defaultSize = DEFAULT_NODE_SIZES[nodeType];
+
+    return {
+        x: originPoint.x,
+        y: originPoint.y,
+        width: defaultSize.width,
+        height: defaultSize.height,
         rotation: 0,
     };
 }
@@ -162,7 +189,10 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
     const insertSubtree = useDesignDocumentStore((state) => state.insertSubtree);
     const commitNodeFrame = useDesignDocumentStore((state) => state.commitNodeFrame);
     const groupNodes = useDesignDocumentStore((state) => state.groupNodes);
+    const removeNode = useDesignDocumentStore((state) => state.removeNode);
     const reparentNodes = useDesignDocumentStore((state) => state.reparentNodes);
+    const undo = useDesignDocumentStore((state) => state.undo);
+    const canUndo = useDesignDocumentStore((state) => state.pastDocuments.length > 0);
 
     const selectedNodeIds = useDesignInteractionStore((state) => state.selectedNodeIds);
     const hoveredNodeId = useDesignInteractionStore((state) => state.hoveredNodeId);
@@ -245,6 +275,22 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                 return;
             }
 
+            if ((event.key === "Backspace" || event.key === "Delete") && selectedNodeIds.length > 0) {
+                if (inlineTextNodeId || activeSession) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                for (const nodeId of selectedNodeIds) {
+                    removeNode(nodeId);
+                }
+
+                clearSelection();
+                setInlineTextNodeId(null);
+                return;
+            }
+
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "g") {
                 event.preventDefault();
 
@@ -259,6 +305,19 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                     setInlineTextNodeId(null);
                 }
 
+                return;
+            }
+
+            if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
+                if (inlineTextNodeId || activeSession || !canUndo) {
+                    return;
+                }
+
+                event.preventDefault();
+                undo();
+                clearSelection();
+                clearDragFeedback();
+                setInlineTextNodeId(null);
                 return;
             }
 
@@ -309,7 +368,52 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, [groupNodes, selectedNodeIds, setActiveTool, setInlineTextNodeId, setSelectedNodeIds, setSpacePressed]);
+    }, [activeSession, canUndo, clearDragFeedback, clearSelection, groupNodes, inlineTextNodeId, removeNode, selectedNodeIds, setActiveTool, setInlineTextNodeId, setSelectedNodeIds, setSpacePressed, undo]);
+
+    useEffect(() => {
+        if (!document) {
+            return;
+        }
+
+        const currentDocument = document;
+
+        function handleCopy(event: ClipboardEvent) {
+            if (isEditableTarget(event.target) || selectedNodeIds.length === 0 || !event.clipboardData) {
+                return;
+            }
+
+            console.log("[DesignClipboard] copy:start", {
+                selectedNodeIds,
+                clipboardTypes: Array.from(event.clipboardData.types),
+            });
+
+            const serializedSelection = serializeSelectionToWebStudioClipboard(currentDocument, selectedNodeIds);
+
+            if (!serializedSelection) {
+                console.log("[DesignClipboard] copy:skip-empty-selection");
+                return;
+            }
+
+            const clipboardMarker = storeWebStudioClipboardPayload(serializedSelection);
+
+            event.preventDefault();
+            event.clipboardData.setData(WEBSTUDIO_DESIGN_JSON_MIME, serializedSelection);
+            event.clipboardData.setData("text/plain", clipboardMarker);
+
+            console.log("[DesignClipboard] copy:done", {
+                mimeType: WEBSTUDIO_DESIGN_JSON_MIME,
+                selectedCount: selectedNodeIds.length,
+                payloadLength: serializedSelection.length,
+                clipboardMarker,
+            });
+        }
+
+        window.addEventListener("copy", handleCopy);
+
+        return () => {
+            window.removeEventListener("copy", handleCopy);
+        };
+    }, [document, selectedNodeIds]);
 
     useEffect(() => {
         if (!pasteFeedback) {
@@ -383,19 +487,17 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                 return;
             }
 
+            const initialFrame = createDefaultFrame(originPoint, nodeType);
+
             setActiveSession({
                 kind: "create",
                 nodeType,
                 parentId,
                 pointerStart: { x: clientX, y: clientY },
                 originPoint,
-                previewFrame: {
-                    x: originPoint.x,
-                    y: originPoint.y,
-                    width: 1,
-                    height: 1,
-                    rotation: 0,
-                },
+                initialFrame,
+                previewFrame: initialFrame,
+                hasDragged: false,
             });
         },
         [clientToParentPoint, setActiveSession],
@@ -515,20 +617,35 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                 });
                 const currentParentId = currentDocument.nodes[session.nodeId]?.parentId ?? null;
                 const guideContainerId = dropTarget.activeContainerId ?? currentParentId;
+                const alignment = computeAlignmentSnap({
+                    document: currentDocument,
+                    draggedNodeId: session.nodeId,
+                    containerId: guideContainerId,
+                    previewAbsoluteFrame: nextPreviewAbsoluteFrame,
+                    snapLocks: session.snapLocks,
+                });
+                const snappedAbsoluteFrame = alignment.frame;
+                const snappedPreviewFrame = {
+                    ...nextPreviewFrame,
+                    x: session.initialFrame.x + (snappedAbsoluteFrame.x - session.initialAbsoluteFrame.x),
+                    y: session.initialFrame.y + (snappedAbsoluteFrame.y - session.initialAbsoluteFrame.y),
+                };
+                const snappedDropTarget = resolveDropTarget({
+                    document: currentDocument,
+                    draggedNodeId: session.nodeId,
+                    previewAbsoluteFrame: snappedAbsoluteFrame,
+                    pointerPosition: nextPointerPosition,
+                });
 
                 setActiveSession({
                     ...session,
-                    previewFrame: nextPreviewFrame,
-                    previewAbsoluteFrame: nextPreviewAbsoluteFrame,
+                    previewFrame: snappedPreviewFrame,
+                    previewAbsoluteFrame: snappedAbsoluteFrame,
+                    snapLocks: alignment.snapLocks,
                 });
                 setDragFeedback({
-                    ...dropTarget,
-                    alignmentGuides: computeAlignmentGuides({
-                        document: currentDocument,
-                        draggedNodeId: session.nodeId,
-                        containerId: guideContainerId,
-                        previewAbsoluteFrame: nextPreviewAbsoluteFrame,
-                    }),
+                    ...snappedDropTarget,
+                    alignmentGuides: alignment.guides,
                 });
                 return;
             }
@@ -548,8 +665,18 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                     return;
                 }
 
+                const exceededDragThreshold = Math.hypot(
+                    event.clientX - session.pointerStart.x,
+                    event.clientY - session.pointerStart.y,
+                ) >= CREATE_DRAG_THRESHOLD;
+
+                if (!session.hasDragged && !exceededDragThreshold) {
+                    return;
+                }
+
                 setActiveSession({
                     ...session,
+                    hasDragged: true,
                     previewFrame: normalizeFrame(session.originPoint, currentPoint),
                 });
             }
@@ -589,8 +716,9 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
 
             if (session.kind === "create") {
                 const { previewFrame } = session;
+                const minimumSize = session.hasDragged ? 1 : MIN_CREATION_SIZE;
 
-                if (previewFrame.width >= MIN_CREATION_SIZE && previewFrame.height >= MIN_CREATION_SIZE) {
+                if (previewFrame.width >= minimumSize && previewFrame.height >= minimumSize) {
                     const node = createDesignNode({
                         type: session.nodeType,
                         parentId: session.parentId,
@@ -798,6 +926,78 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
         const createNodeType = getToolNodeType(effectiveTool);
         const isCandidateParent = candidateParentId === node.id;
         const isActiveContainer = activeContainerId === node.id;
+        const visibleAutoLayoutChildren = node.type === "frame" && node.layoutMode === "auto"
+            ? node.children
+                .filter((childId) => Boolean(currentDocument.nodes[childId]?.visible))
+                .map((childId) => ({ childId, frame: getNodeLocalFrame(currentDocument, childId) }))
+            : [];
+        const gapSegments: DesignGapSegment[] = node.type === "frame" && node.layoutMode === "auto"
+            ? visibleAutoLayoutChildren
+                .slice(1)
+                .map((currentChild, index) => {
+                    const previousChild = visibleAutoLayoutChildren[index];
+
+                    if (!previousChild) {
+                        return null;
+                    }
+
+                    if (node.autoLayout.direction === "horizontal") {
+                        const start = previousChild.frame.x + previousChild.frame.width;
+                        const end = currentChild.frame.x;
+                        const top = Math.min(previousChild.frame.y, currentChild.frame.y);
+                        const bottom = Math.max(previousChild.frame.y + previousChild.frame.height, currentChild.frame.y + currentChild.frame.height);
+
+                        return {
+                            id: `${previousChild.childId}-${currentChild.childId}`,
+                            x: start,
+                            y: top,
+                            width: Math.max(0, end - start),
+                            height: Math.max(0, bottom - top),
+                            handleX: start + (end - start) / 2,
+                            handleY: top + (bottom - top) / 2,
+                        } satisfies DesignGapSegment;
+                    }
+
+                    const start = previousChild.frame.y + previousChild.frame.height;
+                    const end = currentChild.frame.y;
+                    const left = Math.min(previousChild.frame.x, currentChild.frame.x);
+                    const right = Math.max(previousChild.frame.x + previousChild.frame.width, currentChild.frame.x + currentChild.frame.width);
+
+                    return {
+                        id: `${previousChild.childId}-${currentChild.childId}`,
+                        x: left,
+                        y: start,
+                        width: Math.max(0, right - left),
+                        height: Math.max(0, end - start),
+                        handleX: left + (right - left) / 2,
+                        handleY: start + (end - start) / 2,
+                    } satisfies DesignGapSegment;
+                })
+                .filter((segment): segment is DesignGapSegment => Boolean(segment))
+            : [];
+        const showPaddingOverlay = node.type === "frame"
+            && effectiveTool === "select"
+            && (isSelected || isHovered)
+            && !isEditingText;
+        const showGapOverlay = node.type === "frame"
+            && node.layoutMode === "auto"
+            && gapSegments.length > 0
+            && effectiveTool === "select"
+            && (isSelected || isHovered)
+            && !isEditingText;
+        const canInteractWithPadding = node.type === "frame"
+            && effectiveTool === "select"
+            && isSelected
+            && hasSingleSelection
+            && !node.locked
+            && !activeSession;
+        const canInteractWithGap = node.type === "frame"
+            && node.layoutMode === "auto"
+            && effectiveTool === "select"
+            && isSelected
+            && hasSingleSelection
+            && !node.locked
+            && !activeSession;
 
         const nodeOverlaySx = designEditorStyles.canvas.overlayNode({
             isRoot,
@@ -838,6 +1038,14 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                 return;
             }
 
+            if (event.shiftKey) {
+                if (!isSelected) {
+                    selectNode(node.id, { additive: true });
+                }
+
+                return;
+            }
+
             if (event.metaKey || event.ctrlKey) {
                 selectNode(node.id, { additive: true });
                 return;
@@ -866,6 +1074,10 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                 previewFrame: frame,
                 initialAbsoluteFrame: nodeAbsoluteFrame,
                 previewAbsoluteFrame: nodeAbsoluteFrame,
+                snapLocks: {
+                    vertical: null,
+                    horizontal: null,
+                },
             });
         }
 
@@ -936,6 +1148,32 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
 
                 {previewChild ? (
                     <Box sx={designEditorStyles.canvas.previewChild({ frame: previewChild.previewFrame, nodeType: previewChild.nodeType })} />
+                ) : null}
+
+                {node.type === "frame" ? (
+                    <DesignPaddingOverlay
+                        node={node}
+                        zoom={viewport.zoom}
+                        visible={showPaddingOverlay}
+                        interactive={canInteractWithPadding}
+                        onChange={(nextValue) => {
+                            patchNode(node.id, node.layoutMode === "auto"
+                                ? { autoLayout: { padding: nextValue } }
+                                : { padding: nextValue });
+                        }}
+                    />
+                ) : null}
+
+                {node.type === "frame" && node.layoutMode === "auto" ? (
+                    <DesignGapOverlay
+                        direction={node.autoLayout.direction}
+                        gap={node.autoLayout.gap}
+                        segments={gapSegments}
+                        zoom={viewport.zoom}
+                        visible={showGapOverlay}
+                        interactive={canInteractWithGap}
+                        onChange={(nextValue) => patchNode(node.id, { autoLayout: { gap: nextValue } })}
+                    />
                 ) : null}
 
                 {isSelected && hasSingleSelection && !isRoot && effectiveTool === "select"

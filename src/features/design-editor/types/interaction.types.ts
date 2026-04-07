@@ -34,6 +34,20 @@ export interface DesignAlignmentGuide {
     source: "container" | "sibling";
 }
 
+export type DesignAlignmentLine = "left" | "centerX" | "right" | "top" | "centerY" | "bottom";
+
+export interface DesignAlignmentSnapLock {
+    axis: DesignAlignmentGuide["axis"];
+    line: DesignAlignmentLine;
+    position: number;
+    guide: DesignAlignmentGuide;
+}
+
+export interface DesignAlignmentSnapLocks {
+    vertical: DesignAlignmentSnapLock | null;
+    horizontal: DesignAlignmentSnapLock | null;
+}
+
 export type DesignCandidateInsertionMode = "inside" | "auto-layout";
 
 export interface MoveInteractionSession {
@@ -44,6 +58,7 @@ export interface MoveInteractionSession {
     previewFrame: DesignFrame;
     initialAbsoluteFrame: DesignFrame;
     previewAbsoluteFrame: DesignFrame;
+    snapLocks: DesignAlignmentSnapLocks;
 }
 
 export interface ResizeInteractionSession {
@@ -61,7 +76,9 @@ export interface CreateInteractionSession {
     parentId: string;
     pointerStart: DesignPoint;
     originPoint: DesignPoint;
+    initialFrame: DesignFrame;
     previewFrame: DesignFrame;
+    hasDragged: boolean;
 }
 
 export interface PanInteractionSession {

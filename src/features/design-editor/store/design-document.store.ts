@@ -1,10 +1,11 @@
 import { create } from "zustand";
 
 import { designEditorDefaults } from "@/src/customization/design-editor";
-import { createDesignGroupNode } from "@/src/features/design-editor/utils/create-design-node";
+import { createDesignFrameNode } from "@/src/features/design-editor/utils/create-design-node";
 import {
     getCommonParentId,
     getNodeAbsoluteFrame,
+    getNodeLocalFrame,
     getNodesAbsoluteBounds,
     getParentLocalFrame,
     isAncestorNode,
@@ -15,7 +16,9 @@ import type {
     DesignContainerNode,
     DesignDocumentSnapshot,
     DesignImageStyle,
+    DesignNodeAxisSizing,
     DesignNode,
+    DesignNodeSizing,
     DesignNodeStyle,
     DesignPadding,
     DesignShadow,
@@ -55,6 +58,10 @@ type DesignNodePatch = Partial<{
     clipContent: boolean;
     layoutMode: "absolute" | "auto";
 }> & {
+    sizing?: Partial<{
+        width: Partial<DesignNodeAxisSizing>;
+        height: Partial<DesignNodeAxisSizing>;
+    }>;
     style?: Partial<Omit<DesignNodeStyle, "image" | "shadow" | "typography">> & {
         typography?: Partial<DesignTypography>;
         image?: Partial<DesignImageStyle>;
@@ -77,7 +84,15 @@ interface DesignDocumentStore {
     commitNodeFrame: (nodeId: string, frame: DesignFrame) => void;
     reparentNodes: (payload: ReparentNodesPayload) => void;
     groupNodes: (nodeIds: string[]) => string | null;
+    undo: () => void;
 }
+
+interface DesignDocumentStoreState extends DesignDocumentStore {
+    pastDocuments: DesignDocumentSnapshot[];
+    futureDocuments: DesignDocumentSnapshot[];
+}
+
+const HISTORY_LIMIT = 100;
 
 function touchDocument(document: DesignDocumentSnapshot): DesignDocumentSnapshot {
     return {
@@ -110,6 +125,107 @@ function withDocumentNode(
             [nodeId]: nextNode,
         },
     });
+}
+
+function materializeChildFrames(document: DesignDocumentSnapshot, parentId: string): DesignDocumentSnapshot {
+    const parentNode = document.nodes[parentId];
+
+    if (!parentNode || !isContainerNode(parentNode)) {
+        return document;
+    }
+
+    let nextNodes: Record<string, DesignNode> | null = null;
+
+    for (const childId of parentNode.children) {
+        const childNode = document.nodes[childId];
+
+        if (!childNode) {
+            continue;
+        }
+
+        const localFrame = getNodeLocalFrame(document, childId);
+
+        if (
+            childNode.x === localFrame.x &&
+            childNode.y === localFrame.y &&
+            childNode.width === localFrame.width &&
+            childNode.height === localFrame.height &&
+            childNode.rotation === localFrame.rotation
+        ) {
+            continue;
+        }
+
+        nextNodes ??= { ...document.nodes };
+        nextNodes[childId] = {
+            ...childNode,
+            x: localFrame.x,
+            y: localFrame.y,
+            width: localFrame.width,
+            height: localFrame.height,
+            rotation: localFrame.rotation,
+        };
+    }
+
+    if (!nextNodes) {
+        return document;
+    }
+
+    return {
+        ...document,
+        nodes: nextNodes,
+    };
+}
+
+function expandAutoLayoutFrameToFitChildren(document: DesignDocumentSnapshot, nodeId: string): DesignDocumentSnapshot {
+    const node = document.nodes[nodeId];
+
+    if (!node || node.type !== "frame" || node.layoutMode !== "auto") {
+        return document;
+    }
+
+    const childFrames = node.children
+        .filter((childId) => Boolean(document.nodes[childId]))
+        .map((childId) => getNodeLocalFrame(document, childId));
+    const requiredWidth = childFrames.length === 0
+        ? node.autoLayout.padding.left + node.autoLayout.padding.right
+        : Math.max(...childFrames.map((frame) => frame.x + frame.width), 0) + node.autoLayout.padding.right;
+    const requiredHeight = childFrames.length === 0
+        ? node.autoLayout.padding.top + node.autoLayout.padding.bottom
+        : Math.max(...childFrames.map((frame) => frame.y + frame.height), 0) + node.autoLayout.padding.bottom;
+    const nextWidth = node.sizing.width.mode === "hug"
+        ? Math.max(1, requiredWidth)
+        : Math.max(node.width, requiredWidth);
+    const nextHeight = node.sizing.height.mode === "hug"
+        ? Math.max(1, requiredHeight)
+        : Math.max(node.height, requiredHeight);
+
+    if (nextWidth === node.width && nextHeight === node.height) {
+        return document;
+    }
+
+    return {
+        ...document,
+        nodes: {
+            ...document.nodes,
+            [node.id]: {
+                ...node,
+                width: nextWidth,
+                height: nextHeight,
+            },
+        },
+    };
+}
+
+function expandAutoLayoutFramesFromNode(document: DesignDocumentSnapshot, nodeId: string): DesignDocumentSnapshot {
+    let nextDocument = document;
+    let currentNodeId: string | null = nodeId;
+
+    while (currentNodeId) {
+        nextDocument = expandAutoLayoutFrameToFitChildren(nextDocument, currentNodeId);
+        currentNodeId = nextDocument.nodes[currentNodeId]?.parentId ?? null;
+    }
+
+    return nextDocument;
 }
 
 function mergeNodeStyle(currentStyle: DesignNodeStyle, patch: DesignNodePatch["style"]): DesignNodeStyle {
@@ -147,11 +263,33 @@ function mergeNodeStyle(currentStyle: DesignNodeStyle, patch: DesignNodePatch["s
     };
 }
 
+function mergeNodeSizing(currentSizing: DesignNodeSizing, patch: DesignNodePatch["sizing"]): DesignNodeSizing {
+    if (!patch) {
+        return currentSizing;
+    }
+
+    return {
+        width: patch.width
+            ? {
+                ...currentSizing.width,
+                ...patch.width,
+            }
+            : currentSizing.width,
+        height: patch.height
+            ? {
+                ...currentSizing.height,
+                ...patch.height,
+            }
+            : currentSizing.height,
+    };
+}
+
 function applyNodePatch(node: DesignNode, patch: DesignNodePatch): DesignNode {
-    const { style, padding, autoLayout, ...nodePatch } = patch;
+    const { style, padding, autoLayout, sizing, ...nodePatch } = patch;
     const nextNode: DesignNode = {
         ...node,
         ...nodePatch,
+        sizing: mergeNodeSizing(node.sizing, sizing),
         style: mergeNodeStyle(node.style, style),
     } as DesignNode;
 
@@ -210,15 +348,35 @@ function insertChildrenAt(children: string[], nodeIds: string[], index?: number 
     return nextChildren;
 }
 
-export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
+function pushHistoryEntry(state: DesignDocumentStoreState, nextDocument: DesignDocumentSnapshot) {
+    if (!state.document || nextDocument === state.document) {
+        return state;
+    }
+
+    const nextPastDocuments = [...state.pastDocuments, state.document];
+
+    if (nextPastDocuments.length > HISTORY_LIMIT) {
+        nextPastDocuments.shift();
+    }
+
+    return {
+        document: nextDocument,
+        pastDocuments: nextPastDocuments,
+        futureDocuments: [],
+    };
+}
+
+export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => ({
     document: null,
+    pastDocuments: [],
+    futureDocuments: [],
 
     hydrateDocument: (document) => {
-        set({ document });
+        set({ document, pastDocuments: [], futureDocuments: [] });
     },
 
     clearDocument: () => {
-        set({ document: null });
+        set({ document: null, pastDocuments: [], futureDocuments: [] });
     },
 
     patchNode: (nodeId, patch) => {
@@ -227,9 +385,60 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 return state;
             }
 
-            return {
-                document: withDocumentNode(state.document, nodeId, (node) => applyNodePatch(node, patch)),
-            };
+            const currentNode = state.document.nodes[nodeId];
+
+            if (!currentNode) {
+                return state;
+            }
+
+            const switchesToAbsolute = currentNode.type === "frame"
+                && currentNode.layoutMode === "auto"
+                && patch.layoutMode === "absolute";
+            const switchesToAuto = currentNode.type === "frame"
+                && currentNode.layoutMode === "absolute"
+                && patch.layoutMode === "auto";
+            const normalizedPatch: DesignNodePatch = switchesToAuto
+                ? {
+                    ...patch,
+                    sizing: {
+                        width: {
+                            ...(patch.sizing?.width ?? {}),
+                            mode: patch.sizing?.width?.mode ?? "hug",
+                        },
+                        height: {
+                            ...(patch.sizing?.height ?? {}),
+                            mode: patch.sizing?.height?.mode ?? "hug",
+                        },
+                    },
+                }
+                : patch;
+            const baseDocument = switchesToAbsolute
+                ? materializeChildFrames(state.document, nodeId)
+                : state.document;
+            const baseNode = baseDocument.nodes[nodeId];
+            const patchedNode = applyNodePatch(baseNode, normalizedPatch);
+
+            if (patchedNode === baseNode && baseDocument === state.document) {
+                return state;
+            }
+
+            let nextDocument = patchedNode === baseNode
+                ? baseDocument
+                : {
+                    ...baseDocument,
+                    nodes: {
+                        ...baseDocument.nodes,
+                        [nodeId]: patchedNode,
+                    },
+                };
+
+            if (switchesToAuto) {
+                nextDocument = materializeChildFrames(nextDocument, nodeId);
+            }
+
+            nextDocument = expandAutoLayoutFramesFromNode(nextDocument, nodeId);
+
+            return pushHistoryEntry(state, touchDocument(nextDocument));
         });
     },
 
@@ -247,19 +456,17 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 return state;
             }
 
-            return {
-                document: touchDocument({
-                    ...document,
-                    nodes: {
-                        ...document.nodes,
-                        [node.id]: node,
-                        [parentNode.id]: {
-                            ...parentNode,
-                            children: insertChildrenAt(parentNode.children, [node.id], options?.index),
-                        },
+            return pushHistoryEntry(state, touchDocument({
+                ...document,
+                nodes: {
+                    ...document.nodes,
+                    [node.id]: node,
+                    [parentNode.id]: {
+                        ...parentNode,
+                        children: insertChildrenAt(parentNode.children, [node.id], options?.index),
                     },
-                }),
-            };
+                },
+            }));
         });
     },
 
@@ -300,12 +507,10 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 children: insertChildrenAt(targetParent.children, rootNodeIds, insertIndex),
             };
 
-            return {
-                document: touchDocument({
-                    ...document,
-                    nodes: nextNodes,
-                }),
-            };
+            return pushHistoryEntry(state, touchDocument({
+                ...document,
+                nodes: nextNodes,
+            }));
         });
     },
 
@@ -332,12 +537,10 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 };
             }
 
-            return {
-                document: touchDocument({
-                    ...document,
-                    nodes: nextNodes,
-                }),
-            };
+            return pushHistoryEntry(state, touchDocument({
+                ...document,
+                nodes: nextNodes,
+            }));
         });
     },
 
@@ -347,8 +550,9 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 return state;
             }
 
-            return {
-                document: withDocumentNode(state.document, nodeId, (node) => ({
+            return pushHistoryEntry(
+                state,
+                withDocumentNode(state.document, nodeId, (node) => ({
                     ...(node.x === frame.x &&
                         node.y === frame.y &&
                         node.width === frame.width &&
@@ -364,7 +568,7 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                             rotation: frame.rotation,
                         }),
                 })),
-            };
+            );
         });
     },
 
@@ -449,12 +653,10 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 };
             }
 
-            return {
-                document: touchDocument({
-                    ...document,
-                    nodes: nextNodes,
-                }),
-            };
+            return pushHistoryEntry(state, touchDocument({
+                ...document,
+                nodes: nextNodes,
+            }));
         });
     },
 
@@ -503,13 +705,23 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
             }
 
             const insertionIndex = parentNode.children.findIndex((childId) => childId === orderedNodeIds[0]);
-            const groupNode = createDesignGroupNode(commonParentId, parentLocalFrame);
+            const groupNode = createDesignFrameNode(commonParentId, parentLocalFrame);
             const nextNodes = { ...document.nodes };
 
             nextGroupId = groupNode.id;
 
             nextNodes[groupNode.id] = {
                 ...groupNode,
+                name: "Group Frame",
+                clipContent: false,
+                style: {
+                    ...groupNode.style,
+                    fill: designEditorDefaults.fills.transparent,
+                    stroke: null,
+                    strokeWidth: 0,
+                    borderRadius: 0,
+                    shadow: null,
+                },
                 children: orderedNodeIds,
             };
 
@@ -535,14 +747,30 @@ export const useDesignDocumentStore = create<DesignDocumentStore>((set) => ({
                 };
             }
 
-            return {
-                document: touchDocument({
-                    ...document,
-                    nodes: nextNodes,
-                }),
-            };
+            return pushHistoryEntry(state, touchDocument({
+                ...document,
+                nodes: nextNodes,
+            }));
         });
 
         return nextGroupId;
+    },
+
+    undo: () => {
+        set((state) => {
+            const previousDocument = state.pastDocuments.at(-1);
+
+            if (!previousDocument || !state.document) {
+                return state;
+            }
+
+            const nextFutureDocuments = [state.document, ...state.futureDocuments].slice(0, HISTORY_LIMIT);
+
+            return {
+                document: previousDocument,
+                pastDocuments: state.pastDocuments.slice(0, -1),
+                futureDocuments: nextFutureDocuments,
+            };
+        });
     },
 }));

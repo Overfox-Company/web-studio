@@ -105,7 +105,17 @@ export function DesignLayersPanel() {
                             direction="row"
                             alignItems="center"
                             spacing={0.6}
-                            onClick={(event) => selectNode(item.id, { additive: event.metaKey || event.ctrlKey })}
+                            onClick={(event) => {
+                                if (event.shiftKey) {
+                                    if (!isSelected) {
+                                        selectNode(item.id, { additive: true });
+                                    }
+
+                                    return;
+                                }
+
+                                selectNode(item.id, { additive: event.metaKey || event.ctrlKey });
+                            }}
                             onMouseEnter={() => hoverNode(item.id)}
                             onMouseLeave={() => hoverNode(null)}
                             sx={designEditorStyles.layers.item(isSelected, isHovered)}

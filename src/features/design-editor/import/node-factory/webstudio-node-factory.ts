@@ -1,1 +1,1 @@
-export { buildImportedDesignNodes, targetParentUsesAutoLayout } from "./imported-node-factory";
+export { buildImportedDesignNodes, computeImportedBounds, targetParentUsesAutoLayout } from "./imported-node-factory";

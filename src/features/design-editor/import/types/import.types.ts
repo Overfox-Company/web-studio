@@ -2,7 +2,7 @@ export const IMPORT_AST_NODE_TYPES = ["frame", "group", "rectangle", "text", "im
 export type ImportAstNodeType = (typeof IMPORT_AST_NODE_TYPES)[number];
 
 export type PublicClipboardFormat = "svg" | "html" | "png" | "text";
-export type ClipboardImportFormat = PublicClipboardFormat | "figma-clipboard-html";
+export type ClipboardImportFormat = PublicClipboardFormat | "figma-clipboard-html" | "webstudio-design-json";
 export type ImportFidelity = "public" | "bridge";
 
 export interface ImportAstPadding {
@@ -99,6 +99,11 @@ export interface ClipboardPayload {
 }
 
 export type DetectedClipboardFormat =
+    | {
+        kind: "webstudio-design-json";
+        sourceMime: "application/vnd.webstudio.design+json" | "text/plain";
+        content: string;
+    }
     | {
         kind: "figma-clipboard-html";
         sourceMime: "text/html";

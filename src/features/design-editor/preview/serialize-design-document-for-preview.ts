@@ -18,6 +18,14 @@ function serializeNode(node: DesignNode): DesignNode {
         y: node.y,
         width: node.width,
         height: node.height,
+        sizing: {
+            width: {
+                ...node.sizing.width,
+            },
+            height: {
+                ...node.sizing.height,
+            },
+        },
         rotation: node.rotation,
         visible: node.visible,
         locked: node.locked,

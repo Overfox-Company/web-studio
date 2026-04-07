@@ -7,6 +7,7 @@ import type {
     DesignFrameNode,
     DesignGroupNode,
     DesignImageNode,
+    DesignNodeSizing,
     DesignNode,
     DesignRectangleNode,
     DesignTextNode,
@@ -34,6 +35,21 @@ function createDefaultAutoLayout(): DesignAutoLayout {
     };
 }
 
+function createDefaultSizing(): DesignNodeSizing {
+    return {
+        width: {
+            mode: "fixed",
+            min: null,
+            max: null,
+        },
+        height: {
+            mode: "fixed",
+            min: null,
+            max: null,
+        },
+    };
+}
+
 function createBaseNode(parentId: string, frame: DesignFrame) {
     return {
         id: nanoid(),
@@ -43,13 +59,14 @@ function createBaseNode(parentId: string, frame: DesignFrame) {
         y: frame.y,
         width: frame.width,
         height: frame.height,
+        sizing: createDefaultSizing(),
         rotation: frame.rotation,
         visible: true,
         locked: false,
     };
 }
 
-function createFrameNode(parentId: string, frame: DesignFrame): DesignFrameNode {
+export function createDesignFrameNode(parentId: string, frame: DesignFrame): DesignFrameNode {
     return {
         ...createBaseNode(parentId, frame),
         type: "frame",
@@ -179,7 +196,7 @@ export function createComponentInstanceNode(params: {
 export function createDesignNode({ type, parentId, frame }: CreateDesignNodeOptions): DesignNode {
     switch (type) {
         case "frame":
-            return createFrameNode(parentId, frame);
+            return createDesignFrameNode(parentId, frame);
         case "rectangle":
             return createRectangleNode(parentId, frame);
         case "text":

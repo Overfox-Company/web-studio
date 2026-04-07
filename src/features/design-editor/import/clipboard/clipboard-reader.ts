@@ -12,8 +12,16 @@ export async function readClipboardPayload(event: ClipboardEvent): Promise<Clipb
     const clipboardData = event.clipboardData;
 
     if (!clipboardData) {
+        console.log("[DesignClipboard] readClipboard:no-clipboard-data");
         return null;
     }
+
+    const clipboardTypes = Array.from(clipboardData.types);
+
+    console.log("[DesignClipboard] readClipboard:start", {
+        types: clipboardTypes,
+        itemCount: clipboardData.items.length,
+    });
 
     const strings: Record<string, string> = {};
     const files = Array.from(clipboardData.items)
@@ -37,7 +45,9 @@ export async function readClipboardPayload(event: ClipboardEvent): Promise<Clipb
         }),
     );
 
-    for (const mimeType of KNOWN_TEXT_MIME_TYPES) {
+    const textMimeTypes = Array.from(new Set([...clipboardTypes, ...KNOWN_TEXT_MIME_TYPES]));
+
+    for (const mimeType of textMimeTypes) {
         if (strings[mimeType]) {
             continue;
         }
@@ -49,8 +59,13 @@ export async function readClipboardPayload(event: ClipboardEvent): Promise<Clipb
         }
     }
 
+    console.log("[DesignClipboard] readClipboard:done", {
+        stringTypes: Object.keys(strings),
+        fileTypes: files.map((entry) => entry.type),
+    });
+
     return {
-        types: Array.from(clipboardData.types),
+        types: clipboardTypes,
         strings,
         files,
     };

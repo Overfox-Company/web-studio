@@ -4,6 +4,7 @@ import type {
     DesignDocumentSnapshot,
     DesignFrameNode,
     DesignGroupNode,
+    DesignNodeAxisSizing,
     DesignNode,
     DesignPadding,
 } from "@/src/features/design-editor/types/design.types";
@@ -57,6 +58,103 @@ function getAutoLayoutPadding(frameNode: DesignFrameNode): DesignPadding {
     return frameNode.autoLayout.padding;
 }
 
+function getContainerPadding(node: DesignNode): DesignPadding {
+    if (node.type !== "frame") {
+        return {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+        };
+    }
+
+    return node.layoutMode === "auto" ? node.autoLayout.padding : node.padding;
+}
+
+function getDefaultAxisSizing(): DesignNodeAxisSizing {
+    return {
+        mode: "fixed",
+        min: null,
+        max: null,
+    };
+}
+
+function getNodeAxisSizing(node: DesignNode, axis: "width" | "height"): DesignNodeAxisSizing {
+    return node.sizing?.[axis] ?? getDefaultAxisSizing();
+}
+
+function clampAxisSize(value: number, sizing: DesignNodeAxisSizing) {
+    const minValue = sizing.min ?? 1;
+    const maxValue = sizing.max ?? Number.POSITIVE_INFINITY;
+
+    return Math.max(minValue, Math.min(maxValue, value));
+}
+
+function getAutoLayoutHugSize(document: DesignDocumentSnapshot, node: DesignFrameNode) {
+    const padding = getAutoLayoutPadding(node);
+    const childFrames = node.children
+        .filter((childId) => Boolean(document.nodes[childId]))
+        .map((childId) => getChildBaseSize(document, childId));
+
+    if (childFrames.length === 0) {
+        return {
+            width: Math.max(1, padding.left + padding.right),
+            height: Math.max(1, padding.top + padding.bottom),
+        };
+    }
+
+    const gap = Math.max(0, childFrames.length - 1) * node.autoLayout.gap;
+
+    if (node.autoLayout.direction === "horizontal") {
+        return {
+            width: Math.max(1, childFrames.reduce((sum, frame) => sum + frame.width, 0) + gap + padding.left + padding.right),
+            height: Math.max(1, Math.max(...childFrames.map((frame) => frame.height), 0) + padding.top + padding.bottom),
+        };
+    }
+
+    return {
+        width: Math.max(1, Math.max(...childFrames.map((frame) => frame.width), 0) + padding.left + padding.right),
+        height: Math.max(1, childFrames.reduce((sum, frame) => sum + frame.height, 0) + gap + padding.top + padding.bottom),
+    };
+}
+
+function getHugSize(document: DesignDocumentSnapshot, node: DesignNode) {
+    if (node.type === "frame" && node.layoutMode === "auto") {
+        return getAutoLayoutHugSize(document, node);
+    }
+
+    return {
+        width: node.width,
+        height: node.height,
+    };
+}
+
+function getResolvedNodeSize(document: DesignDocumentSnapshot, node: DesignNode): { width: number; height: number } {
+    const hugSize = getHugSize(document, node);
+    const parentNode = node.parentId ? document.nodes[node.parentId] : null;
+
+    if (!parentNode) {
+        const widthSizing = getNodeAxisSizing(node, "width");
+        const heightSizing = getNodeAxisSizing(node, "height");
+
+        return {
+            width: clampAxisSize(widthSizing.mode === "hug" ? hugSize.width : node.width, widthSizing),
+            height: clampAxisSize(heightSizing.mode === "hug" ? hugSize.height : node.height, heightSizing),
+        };
+    }
+
+    const parentPadding = getContainerPadding(parentNode);
+    const innerWidth = Math.max(1, parentNode.width - parentPadding.left - parentPadding.right);
+    const innerHeight = Math.max(1, parentNode.height - parentPadding.top - parentPadding.bottom);
+    const widthSizing = getNodeAxisSizing(node, "width");
+    const heightSizing = getNodeAxisSizing(node, "height");
+
+    return {
+        width: clampAxisSize(widthSizing.mode === "fill" ? innerWidth : widthSizing.mode === "hug" ? hugSize.width : node.width, widthSizing),
+        height: clampAxisSize(heightSizing.mode === "fill" ? innerHeight : heightSizing.mode === "hug" ? hugSize.height : node.height, heightSizing),
+    };
+}
+
 function getChildBaseSize(document: DesignDocumentSnapshot, childId: string): DesignFrame {
     const childNode = document.nodes[childId];
 
@@ -70,11 +168,13 @@ function getChildBaseSize(document: DesignDocumentSnapshot, childId: string): De
         };
     }
 
+    const resolvedSize = getResolvedNodeSize(document, childNode);
+
     return {
         x: childNode.x,
         y: childNode.y,
-        width: childNode.width,
-        height: childNode.height,
+        width: resolvedSize.width,
+        height: resolvedSize.height,
         rotation: childNode.rotation,
     };
 }
@@ -101,7 +201,15 @@ export function getNodeLocalFrame(document: DesignDocumentSnapshot, nodeId: stri
     const parentNode = document.nodes[parentId];
 
     if (!parentNode || !isAutoLayoutFrame(parentNode)) {
-        return getNodeFrame(node);
+        const resolvedSize = getResolvedNodeSize(document, node);
+
+        return {
+            x: node.x,
+            y: node.y,
+            width: resolvedSize.width,
+            height: resolvedSize.height,
+            rotation: node.rotation,
+        };
     }
 
     const padding = getAutoLayoutPadding(parentNode);
