@@ -95,14 +95,13 @@ export function resolveDropTarget({
     const currentParentId = document.nodes[draggedNodeId]?.parentId ?? null;
     const previewCenter = getPreviewCenter(previewAbsoluteFrame);
 
-    const matchingContainers = Object.values(document.nodes)
+    const candidateContainers = Object.values(document.nodes)
         .filter((node) => canAcceptDropTarget(document, draggedNodeId, node))
         .map((node) => ({
             node,
             absoluteFrame: getNodeAbsoluteFrame(document, node.id),
             depth: getNodeDepth(document, node.id),
         }))
-        .filter(({ absoluteFrame }) => containsPoint(absoluteFrame, pointerPosition) || containsPoint(absoluteFrame, previewCenter))
         .sort((left, right) => {
             if (right.depth !== left.depth) {
                 return right.depth - left.depth;
@@ -111,7 +110,12 @@ export function resolveDropTarget({
             return left.absoluteFrame.width * left.absoluteFrame.height - right.absoluteFrame.width * right.absoluteFrame.height;
         });
 
-    const activeContainer = matchingContainers[0]?.node ?? null;
+    const matchingContainers = candidateContainers.filter(({ absoluteFrame }) => containsPoint(absoluteFrame, pointerPosition));
+    const resolvedContainers = matchingContainers.length > 0
+        ? matchingContainers
+        : candidateContainers.filter(({ absoluteFrame }) => containsPoint(absoluteFrame, previewCenter));
+
+    const activeContainer = resolvedContainers[0]?.node ?? null;
     const isAutoLayoutTarget = Boolean(activeContainer && activeContainer.type === "frame" && activeContainer.layoutMode === "auto");
     const candidateParentId = activeContainer
         ? isAutoLayoutTarget

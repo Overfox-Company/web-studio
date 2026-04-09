@@ -17,7 +17,7 @@ import { Box, InputBase, Stack, Typography } from "@mui/material";
 import { designEditorStyles } from "@/src/customization/design-editor";
 import { DesignLayerRow } from "@/src/features/design-editor/components/layers/DesignLayerRow";
 import { getDraggedLayerNodeIds, type LayerDropTarget, resolveLayerDrop } from "@/src/features/design-editor/components/layers/design-layer-dnd";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import { buildLayerItems } from "@/src/features/design-editor/utils/design-tree";
 

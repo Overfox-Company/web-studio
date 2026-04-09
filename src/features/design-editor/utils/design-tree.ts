@@ -148,10 +148,32 @@ function getResolvedNodeSize(document: DesignDocumentSnapshot, node: DesignNode)
     const innerHeight = Math.max(1, parentNode.height - parentPadding.top - parentPadding.bottom);
     const widthSizing = getNodeAxisSizing(node, "width");
     const heightSizing = getNodeAxisSizing(node, "height");
+    const resolvedWidth = clampAxisSize(widthSizing.mode === "fill" ? innerWidth : widthSizing.mode === "hug" ? hugSize.width : node.width, widthSizing);
+    const resolvedHeight = clampAxisSize(heightSizing.mode === "fill" ? innerHeight : heightSizing.mode === "hug" ? hugSize.height : node.height, heightSizing);
+
+    if (widthSizing.mode === "fill" || heightSizing.mode === "fill") {
+        console.log("[design-tree][fill-size]", {
+            nodeId: node.id,
+            nodeName: node.name,
+            parentId: parentNode.id,
+            parentName: parentNode.name,
+            parentWidth: parentNode.width,
+            parentHeight: parentNode.height,
+            parentPadding,
+            innerWidth,
+            innerHeight,
+            widthMode: widthSizing.mode,
+            heightMode: heightSizing.mode,
+            resolvedWidth,
+            resolvedHeight,
+            nodeX: node.x,
+            nodeY: node.y,
+        });
+    }
 
     return {
-        width: clampAxisSize(widthSizing.mode === "fill" ? innerWidth : widthSizing.mode === "hug" ? hugSize.width : node.width, widthSizing),
-        height: clampAxisSize(heightSizing.mode === "fill" ? innerHeight : heightSizing.mode === "hug" ? hugSize.height : node.height, heightSizing),
+        width: resolvedWidth,
+        height: resolvedHeight,
     };
 }
 
@@ -202,10 +224,13 @@ export function getNodeLocalFrame(document: DesignDocumentSnapshot, nodeId: stri
 
     if (!parentNode || !isAutoLayoutFrame(parentNode)) {
         const resolvedSize = getResolvedNodeSize(document, node);
+        const widthSizing = getNodeAxisSizing(node, "width");
+        const heightSizing = getNodeAxisSizing(node, "height");
+        const parentPadding = parentNode ? getContainerPadding(parentNode) : { top: 0, right: 0, bottom: 0, left: 0 };
 
         return {
-            x: node.x,
-            y: node.y,
+            x: widthSizing.mode === "fill" ? parentPadding.left : node.x,
+            y: heightSizing.mode === "fill" ? parentPadding.top : node.y,
             width: resolvedSize.width,
             height: resolvedSize.height,
             rotation: node.rotation,

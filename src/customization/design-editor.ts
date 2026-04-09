@@ -1089,6 +1089,7 @@ export const designEditorStyles = {
                     left: options.frame.x,
                     top: options.frame.y,
                 }),
+            boxSizing: "border-box",
             width: options.frame.width,
             height: options.frame.height,
             transform: `rotate(${options.frame.rotation}deg)`,
@@ -1206,9 +1207,9 @@ export const designEditorStyles = {
                         ? `1px solid ${designEditorTokens.selectionOutlineHover}`
                         : options.isDescendantOfHoveredFrame
                             ? `1px dotted ${designEditorTokens.selectionOutlineHover}`
-                        : options.isActiveContainer
-                            ? `1px solid ${designEditorTokens.selectionOutlineSoft}`
-                            : "1px solid transparent",
+                            : options.isActiveContainer
+                                ? `1px solid ${designEditorTokens.selectionOutlineSoft}`
+                                : "1px solid transparent",
             background: options.isEditingText ? designEditorTokens.editingOverlayBackground : "transparent",
             transition: options.hasActiveSession ? "none" : "border-color 120ms ease",
         }),
@@ -1285,6 +1286,7 @@ export const designEditorStyles = {
             position: "absolute",
             width: 10,
             height: 10,
+            zIndex: 10000,
             borderRadius: sharedCustomization.radius.pill,
             background: designEditorTokens.overlayHandleFill,
             border: `2px solid ${designEditorTokens.overlayHandleBorder}`,

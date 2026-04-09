@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { useComponentLibraryStore } from "@/src/features/component-library/store/component-library.store";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 
 interface UseComponentLibraryComponentPersistenceOptions {

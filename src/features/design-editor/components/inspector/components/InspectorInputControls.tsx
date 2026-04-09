@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { HorizonalScrollPointIcon } from "@hugeicons-pro/core-solid-standard";
@@ -32,6 +32,8 @@ export function DraggableNumberField({
     dragIcon?: IconSvgElement;
     placeholder?: string;
 }) {
+    const pointerLockTargetRef = useRef<HTMLButtonElement | null>(null);
+    const pointerLockDeltaRef = useRef(0);
     const [dragState, setDragState] = useState<{
         startClientX: number;
         initialValue: number;
@@ -45,7 +47,10 @@ export function DraggableNumberField({
         const currentDragState = dragState;
 
         function handlePointerMove(event: PointerEvent) {
-            const deltaSteps = Math.trunc((event.clientX - currentDragState.startClientX) / DRAG_SENSITIVITY_PX);
+            const pointerLocked = document.pointerLockElement === pointerLockTargetRef.current;
+            const deltaSteps = pointerLocked
+                ? Math.trunc((pointerLockDeltaRef.current += event.movementX) / DRAG_SENSITIVITY_PX)
+                : Math.trunc((event.clientX - currentDragState.startClientX) / DRAG_SENSITIVITY_PX);
             const nextValue = clampNumericValue(currentDragState.initialValue + deltaSteps, min);
 
             if (nextValue !== value) {
@@ -54,6 +59,12 @@ export function DraggableNumberField({
         }
 
         function handlePointerUp() {
+            if (document.pointerLockElement === pointerLockTargetRef.current) {
+                document.exitPointerLock();
+            }
+
+            pointerLockTargetRef.current = null;
+            pointerLockDeltaRef.current = 0;
             setDragState(null);
         }
 
@@ -73,6 +84,13 @@ export function DraggableNumberField({
 
         event.preventDefault();
         event.stopPropagation();
+
+        pointerLockDeltaRef.current = 0;
+        pointerLockTargetRef.current = event.currentTarget;
+
+        if (typeof event.currentTarget.requestPointerLock === "function") {
+            event.currentTarget.requestPointerLock();
+        }
 
         setDragState({
             startClientX: event.clientX,

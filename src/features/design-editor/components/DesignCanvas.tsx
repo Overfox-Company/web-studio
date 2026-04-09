@@ -14,7 +14,7 @@ import {
     WEBSTUDIO_DESIGN_JSON_MIME,
 } from "@/src/features/design-editor/import/adapters/webstudio-design-json.shared";
 import { pasteFromClipboard } from "@/src/features/design-editor/import/paste-from-clipboard";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import { createRootViewportFrameOverride } from "@/src/features/design-editor/utils/page-viewport";
 import type { DesignNode } from "@/src/features/design-editor/types/design.types";
@@ -244,6 +244,25 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
     }, [canvasMode, rootNode, viewportMode]);
 
     const effectiveRootWidth = rootFrameOverride?.width ?? rootNode?.width ?? 0;
+
+    useEffect(() => {
+        if (!rootNode || !rootFrameOverride || canvasMode === "workspace") {
+            return;
+        }
+
+        if (rootNode.width === rootFrameOverride.width && rootNode.sizing.width.mode === "fixed") {
+            return;
+        }
+
+        patchNode(rootNode.id, {
+            width: rootFrameOverride.width,
+            sizing: {
+                width: {
+                    mode: "fixed",
+                },
+            },
+        });
+    }, [canvasMode, patchNode, rootFrameOverride, rootNode]);
 
     useEffect(() => {
         viewportRef.current = viewport;
@@ -758,21 +777,22 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
     }, [activeSession, clearDragFeedback, clientPointToDocumentPoint, clientToParentPoint, commitNodeFrame, document, insertNode, reparentNodes, setActiveSession, setActiveTool, setDragFeedback, setInlineTextNodeId, setSelectedNodeIds, setViewport, viewport.zoom]);
 
     const handleCanvasWheel = useCallback(
-        (event: React.WheelEvent<HTMLDivElement>) => {
+        (event: WheelEvent) => {
             event.preventDefault();
 
             if (!containerRef.current) {
                 return;
             }
 
+            const currentViewport = viewportRef.current;
             const rect = containerRef.current.getBoundingClientRect();
             const localX = event.clientX - rect.left;
             const localY = event.clientY - rect.top;
 
             if (event.metaKey || event.ctrlKey) {
-                const nextZoom = clampZoom(viewport.zoom - event.deltaY * 0.0015);
-                const worldX = (localX - viewport.x) / viewport.zoom;
-                const worldY = (localY - viewport.y) / viewport.zoom;
+                const nextZoom = clampZoom(currentViewport.zoom - event.deltaY * 0.0015);
+                const worldX = (localX - currentViewport.x) / currentViewport.zoom;
+                const worldY = (localY - currentViewport.y) / currentViewport.zoom;
 
                 setViewport({
                     x: localX - worldX * nextZoom,
@@ -783,13 +803,27 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
             }
 
             setViewport({
-                ...viewport,
-                x: viewport.x - event.deltaX,
-                y: viewport.y - event.deltaY,
+                ...currentViewport,
+                x: currentViewport.x - event.deltaX,
+                y: currentViewport.y - event.deltaY,
             });
         },
-        [setViewport, viewport],
+        [setViewport],
     );
+
+    useEffect(() => {
+        const canvasElement = containerRef.current;
+
+        if (!canvasElement) {
+            return;
+        }
+
+        canvasElement.addEventListener("wheel", handleCanvasWheel, { passive: false });
+
+        return () => {
+            canvasElement.removeEventListener("wheel", handleCanvasWheel);
+        };
+    }, [handleCanvasWheel]);
 
     const commitInlineText = useCallback(() => {
         if (!inlineTextNodeId || !document) {
@@ -1068,7 +1102,7 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
             }
 
             if (isRoot) {
-                clearSelection();
+                selectNode(node.id);
                 setInlineTextNodeId(null);
                 return;
             }
@@ -1154,12 +1188,6 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
                     </Box>
                 ) : null}
 
-                {node.type === "frame" && node.layoutMode === "auto" ? (
-                    <Box sx={designEditorStyles.canvas.autoLayoutBadge}>
-                        Auto Layout
-                    </Box>
-                ) : null}
-
                 {treeChildren}
 
                 {previewChild ? (
@@ -1213,7 +1241,6 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
         <Box
             id="design-editor-canvas"
             ref={containerRef}
-            onWheel={handleCanvasWheel}
             onPointerDown={(event) => {
                 if (event.button !== 0) {
                     return;

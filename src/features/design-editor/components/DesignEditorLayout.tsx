@@ -11,7 +11,7 @@ import { DesignEditorFloatingToolbar, DesignEditorTopbar } from "@/src/features/
 import { DesignInspectorPanel } from "@/src/features/design-editor/components/DesignInspectorPanel";
 import { DesignLayersPanel } from "@/src/features/design-editor/components/DesignLayersPanel";
 import { useDesignEditorPersistence } from "@/src/features/design-editor/hooks/use-design-editor-persistence";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { defaultDesignPersistenceAdapter, loadProjectSnapshot } from "@/src/features/design-editor/utils/design-document-persistence";
 import { useProjectCompile } from "@/src/features/project-compile/use-project-compile";
 import { useLockBodyScroll } from "@/src/lib/hooks/use-lock-body-scroll";

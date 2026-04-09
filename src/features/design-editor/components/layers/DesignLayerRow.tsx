@@ -128,7 +128,6 @@ export function DesignLayerRow({
                 <Stack sx={designEditorStyles.layers.textStack}>
                     <Stack direction="row" spacing={0.8} alignItems="center" sx={designEditorStyles.layers.nameRow}>
                         <Typography sx={designEditorStyles.layers.name(isSelected)}>{item.node.name}</Typography>
-                        {item.node.type === "frame" && item.node.layoutMode === "auto" ? <Typography sx={designEditorStyles.layers.autoBadge}>Auto</Typography> : null}
                     </Stack>
                     <Typography sx={designEditorStyles.layers.typeLabel}>{item.node.type}</Typography>
                 </Stack>

@@ -23,7 +23,7 @@ import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 
 import { designEditorStyles } from "@/src/customization/design-editor";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import type { DesignTool } from "@/src/features/design-editor/types/interaction.types";
 import { createRootViewportFrameOverride } from "@/src/features/design-editor/utils/page-viewport";
 import type { PageViewportMode } from "@/src/features/project-editor/types/editor.types";

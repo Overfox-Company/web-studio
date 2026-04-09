@@ -7,7 +7,7 @@ import {
     createDesignPreviewSnapshotMessage,
 } from "@/src/features/design-editor/preview/preview-channel";
 import { serializeDesignDocumentForPreview } from "@/src/features/design-editor/preview/serialize-design-document-for-preview";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import {
     defaultDesignPersistenceAdapter,

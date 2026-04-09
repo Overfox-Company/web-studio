@@ -36,9 +36,9 @@ import {
 } from "@/src/features/design-editor/components/inspector/InspectorControls";
 import { uniquePalette } from "@/src/features/design-editor/components/color-picker/ColorConversionUtils";
 import { TEXT_FONT_FAMILY_OPTIONS } from "@/src/features/design-editor/constants/text-font-options";
-import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
+import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
-import type { DesignNode } from "@/src/features/design-editor/types/design.types";
+import type { DesignNode, DesignPadding } from "@/src/features/design-editor/types/design.types";
 import { isFrameNode } from "@/src/features/design-editor/utils/design-tree";
 
 const TEXT_FONT_WEIGHT_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
@@ -67,6 +67,19 @@ function NodeHeader({ node, label, icon, onRename }: { node: DesignNode; label: 
     );
 }
 
+function getParentContentPadding(node: DesignNode | null | undefined): DesignPadding {
+    if (!node || node.type !== "frame") {
+        return {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+        };
+    }
+
+    return node.layoutMode === "auto" ? node.autoLayout.padding : node.padding;
+}
+
 function InspectorContent({ node }: { node: DesignNode }) {
     const patchNode = useDesignDocumentStore((state) => state.patchNode);
     const documentNodes = useDesignDocumentStore((state) => state.document?.nodes);
@@ -90,6 +103,8 @@ function InspectorContent({ node }: { node: DesignNode }) {
     const shadow = node.style.shadow ?? designEditorDefaults.shadows.mergeFallback;
     const canUseHugSizing = node.type === "frame" && node.layoutMode === "auto";
     const showContentSection = node.type === "text" || node.type === "image" || node.type === "component-instance";
+    const parentNode = node.parentId ? documentNodes?.[node.parentId] : null;
+    const parentContentPadding = getParentContentPadding(parentNode);
 
     return (
         <Stack spacing={0}>
@@ -122,7 +137,12 @@ function InspectorContent({ node }: { node: DesignNode }) {
                         maxValue={node.sizing.width.max}
                         allowFill={Boolean(node.parentId)}
                         allowHug={canUseHugSizing}
-                        onModeChange={(nextValue) => patchNode(node.id, { sizing: { width: { mode: nextValue } } })}
+                        onModeChange={(nextValue) => patchNode(node.id, nextValue === "fill"
+                            ? {
+                                x: parentContentPadding.left,
+                                sizing: { width: { mode: nextValue } },
+                            }
+                            : { sizing: { width: { mode: nextValue } } })}
                         onValueChange={(nextValue) => patchNode(node.id, { width: Math.max(1, nextValue) })}
                         onMinChange={(nextValue) => patchNode(node.id, { sizing: { width: { min: nextValue } } })}
                         onMaxChange={(nextValue) => patchNode(node.id, { sizing: { width: { max: nextValue } } })}
@@ -136,7 +156,12 @@ function InspectorContent({ node }: { node: DesignNode }) {
                         maxValue={node.sizing.height.max}
                         allowFill={Boolean(node.parentId)}
                         allowHug={canUseHugSizing}
-                        onModeChange={(nextValue) => patchNode(node.id, { sizing: { height: { mode: nextValue } } })}
+                        onModeChange={(nextValue) => patchNode(node.id, nextValue === "fill"
+                            ? {
+                                y: parentContentPadding.top,
+                                sizing: { height: { mode: nextValue } },
+                            }
+                            : { sizing: { height: { mode: nextValue } } })}
                         onValueChange={(nextValue) => patchNode(node.id, { height: Math.max(1, nextValue) })}
                         onMinChange={(nextValue) => patchNode(node.id, { sizing: { height: { min: nextValue } } })}
                         onMaxChange={(nextValue) => patchNode(node.id, { sizing: { height: { max: nextValue } } })}

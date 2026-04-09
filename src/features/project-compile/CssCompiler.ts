@@ -197,8 +197,8 @@ export function compileProjectCss(pages: ResolvedExportPage[], libraryComponents
     const rules = [
         "* { box-sizing: border-box; }",
         "html, body { margin: 0; padding: 0; }",
-        "body { font-family: \"IBM Plex Sans\", sans-serif; color: #111827; background: #ffffff; }",
-        ".ws-page-shell { min-height: 100vh; }",
+        "body { min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; font-family: \"IBM Plex Sans\", sans-serif; color: #111827; background: #ffffff; }",
+        ".ws-page-shell { min-height: 100vh; margin-inline: auto; }",
         ".ws-svg-asset > svg { width: 100%; height: 100%; display: block; }",
     ];
 
