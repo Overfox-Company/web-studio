@@ -31,8 +31,11 @@ import { createDesignNode } from "@/src/features/design-editor/utils/create-desi
 import { resolveDropTarget } from "@/src/features/design-editor/utils/drag-drop";
 import {
     framesEqual,
+    getClosestFrameAncestorId,
+    isAncestorNode,
     getNodeAbsoluteFrame,
     getNodeLocalFrame,
+    getNodeSiblingZIndex,
     getNodeFrame,
     isContainerNode,
     isAutoLayoutFrame,
@@ -902,6 +905,7 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
         }
 
         const currentDocument = document;
+        const hoveredFrameId = getClosestFrameAncestorId(currentDocument, hoveredNodeId);
 
         const node = currentDocument.nodes[nodeId];
 
@@ -921,11 +925,20 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
         const isSelected = selectedNodeIds.includes(node.id);
         const hasSingleSelection = selectedNodeIds.length === 1;
         const isHovered = hoveredNodeId === node.id;
+        const isFrameHoverTarget = hoveredFrameId === node.id;
+        const isDescendantOfHoveredFrame = Boolean(
+            hoveredFrameId
+            && hoveredNodeId !== node.id
+            && hoveredFrameId !== node.id
+            && isAncestorNode(currentDocument, hoveredFrameId, node.id),
+        );
         const isEditingText = inlineTextNodeId === node.id && node.type === "text";
         const previewChild = activeSession?.kind === "create" && activeSession.parentId === node.id ? activeSession : null;
         const createNodeType = getToolNodeType(effectiveTool);
         const isCandidateParent = candidateParentId === node.id;
         const isActiveContainer = activeContainerId === node.id;
+        const siblingZIndex = getNodeSiblingZIndex(currentDocument, node.id);
+        const interactionBoost = isSelected ? 3000 : isHovered ? 2000 : isFrameHoverTarget ? 1500 : isCandidateParent ? 1000 : 0;
         const visibleAutoLayoutChildren = node.type === "frame" && node.layoutMode === "auto"
             ? node.children
                 .filter((childId) => Boolean(currentDocument.nodes[childId]?.visible))
@@ -1008,9 +1021,12 @@ export function DesignCanvas({ viewportMode, canvasMode = "page" }: DesignCanvas
             isCandidateParent,
             isSelected,
             isHovered,
+            isFrameHoverTarget,
+            isDescendantOfHoveredFrame,
             isActiveContainer,
             isEditingText,
             hasActiveSession: Boolean(activeSession),
+            zIndex: siblingZIndex + interactionBoost,
         });
 
         function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {

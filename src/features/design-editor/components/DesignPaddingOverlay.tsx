@@ -112,6 +112,10 @@ export function DesignPaddingOverlay({
     const actualLeft = Math.max(0, padding.left);
     const handleInset = 6;
 
+    function resolveCenterPosition(value: number) {
+        return value > 0 ? value / 2 : handleInset;
+    }
+
     function beginDrag(side: PaddingSide, event: React.PointerEvent<HTMLDivElement>) {
         if (!interactive || event.button !== 0) {
             return;
@@ -245,7 +249,7 @@ export function DesignPaddingOverlay({
                 side: "top",
                 value: padding.top,
                 left: "50%",
-                top: handleInset,
+                top: resolveCenterPosition(actualTop),
                 transform: "translateX(-50%)",
                 cursor: "ns-resize",
             })}
@@ -254,7 +258,7 @@ export function DesignPaddingOverlay({
                 side: "bottom",
                 value: padding.bottom,
                 left: "50%",
-                bottom: handleInset,
+                bottom: resolveCenterPosition(actualBottom),
                 transform: "translateX(-50%)",
                 cursor: "ns-resize",
             })}
@@ -262,7 +266,7 @@ export function DesignPaddingOverlay({
             {renderHandle({
                 side: "left",
                 value: padding.left,
-                left: handleInset,
+                left: resolveCenterPosition(actualLeft),
                 top: "50%",
                 transform: "translateY(-50%)",
                 cursor: "ew-resize",
@@ -271,7 +275,7 @@ export function DesignPaddingOverlay({
             {renderHandle({
                 side: "right",
                 value: padding.right,
-                right: handleInset,
+                right: resolveCenterPosition(actualRight),
                 top: "50%",
                 transform: "translateY(-50%)",
                 cursor: "ew-resize",

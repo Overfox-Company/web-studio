@@ -192,12 +192,12 @@ function expandAutoLayoutFrameToFitChildren(document: DesignDocumentSnapshot, no
     const requiredHeight = childFrames.length === 0
         ? node.autoLayout.padding.top + node.autoLayout.padding.bottom
         : Math.max(...childFrames.map((frame) => frame.y + frame.height), 0) + node.autoLayout.padding.bottom;
-    const nextWidth = node.sizing.width.mode === "hug"
-        ? Math.max(1, requiredWidth)
-        : Math.max(node.width, requiredWidth);
-    const nextHeight = node.sizing.height.mode === "hug"
-        ? Math.max(1, requiredHeight)
-        : Math.max(node.height, requiredHeight);
+    const nextWidth = node.sizing.width.mode === "fill"
+        ? Math.max(node.width, requiredWidth)
+        : Math.max(1, requiredWidth);
+    const nextHeight = node.sizing.height.mode === "fill"
+        ? Math.max(node.height, requiredHeight)
+        : Math.max(1, requiredHeight);
 
     if (nextWidth === node.width && nextHeight === node.height) {
         return document;
@@ -524,12 +524,14 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
 
             const node = document.nodes[nodeId];
             const nextNodes = { ...document.nodes };
+            const affectedParentIds = new Set<string>();
 
             for (const id of collectSubtreeIds(document, nodeId)) {
                 delete nextNodes[id];
             }
 
             if (node.parentId && nextNodes[node.parentId] && isContainerNode(nextNodes[node.parentId])) {
+                affectedParentIds.add(node.parentId);
                 const parentNode = nextNodes[node.parentId] as DesignContainerNode;
                 nextNodes[node.parentId] = {
                     ...parentNode,
@@ -537,10 +539,16 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
                 };
             }
 
-            return pushHistoryEntry(state, touchDocument({
+            let nextDocument = {
                 ...document,
                 nodes: nextNodes,
-            }));
+            };
+
+            for (const parentId of affectedParentIds) {
+                nextDocument = expandAutoLayoutFramesFromNode(nextDocument, parentId);
+            }
+
+            return pushHistoryEntry(state, touchDocument(nextDocument));
         });
     },
 
@@ -552,22 +560,48 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
 
             return pushHistoryEntry(
                 state,
-                withDocumentNode(state.document, nodeId, (node) => ({
-                    ...(node.x === frame.x &&
-                        node.y === frame.y &&
-                        node.width === frame.width &&
-                        node.height === frame.height &&
-                        node.rotation === frame.rotation
-                        ? node
-                        : {
-                            ...node,
-                            x: frame.x,
-                            y: frame.y,
-                            width: frame.width,
-                            height: frame.height,
-                            rotation: frame.rotation,
-                        }),
-                })),
+                withDocumentNode(state.document, nodeId, (node) => {
+                    const frameChanged =
+                        node.x !== frame.x ||
+                        node.y !== frame.y ||
+                        node.width !== frame.width ||
+                        node.height !== frame.height ||
+                        node.rotation !== frame.rotation;
+                    const widthChanged = node.width !== frame.width;
+                    const heightChanged = node.height !== frame.height;
+                    const shouldSwitchWidthToFixed = widthChanged && node.sizing.width.mode === "fill";
+                    const shouldSwitchHeightToFixed = heightChanged && node.sizing.height.mode === "fill";
+
+                    if (!frameChanged && !shouldSwitchWidthToFixed && !shouldSwitchHeightToFixed) {
+                        return node;
+                    }
+
+                    return {
+                        ...node,
+                        x: frame.x,
+                        y: frame.y,
+                        width: frame.width,
+                        height: frame.height,
+                        rotation: frame.rotation,
+                        sizing: shouldSwitchWidthToFixed || shouldSwitchHeightToFixed
+                            ? {
+                                ...node.sizing,
+                                width: shouldSwitchWidthToFixed
+                                    ? {
+                                        ...node.sizing.width,
+                                        mode: "fixed",
+                                    }
+                                    : node.sizing.width,
+                                height: shouldSwitchHeightToFixed
+                                    ? {
+                                        ...node.sizing.height,
+                                        mode: "fixed",
+                                    }
+                                    : node.sizing.height,
+                            }
+                            : node.sizing,
+                    };
+                }),
             );
         });
     },
@@ -601,6 +635,7 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
             }
 
             const nextNodes = { ...document.nodes };
+            const affectedParentIds = new Set<string>();
 
             for (const nodeId of normalizedNodeIds) {
                 const node = nextNodes[nodeId];
@@ -610,6 +645,7 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
                 }
 
                 if (node.parentId) {
+                    affectedParentIds.add(node.parentId);
                     const currentParent = nextNodes[node.parentId];
 
                     if (currentParent && isContainerNode(currentParent)) {
@@ -631,6 +667,7 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
                 ...freshParent,
                 children: insertChildrenAt(freshParent.children, normalizedNodeIds, insertIndex),
             };
+            affectedParentIds.add(nextParentId);
 
             for (const nodeId of normalizedNodeIds) {
                 const node = nextNodes[nodeId];
@@ -653,10 +690,16 @@ export const useDesignDocumentStore = create<DesignDocumentStoreState>((set) => 
                 };
             }
 
-            return pushHistoryEntry(state, touchDocument({
+            let nextDocument = {
                 ...document,
                 nodes: nextNodes,
-            }));
+            };
+
+            for (const parentId of affectedParentIds) {
+                nextDocument = expandAutoLayoutFramesFromNode(nextDocument, parentId);
+            }
+
+            return pushHistoryEntry(state, touchDocument(nextDocument));
         });
     },
 

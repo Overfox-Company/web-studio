@@ -12,6 +12,7 @@ import type { DesignPreviewSnapshot } from "@/src/features/design-editor/preview
 import type { DesignDocumentSnapshot } from "@/src/features/design-editor/types/design.types";
 import type { DesignFrame } from "@/src/features/design-editor/types/interaction.types";
 import {
+    getNodeSiblingZIndex,
     getNodeLocalFrame,
     isAutoLayoutFrame,
     isContainerNode,
@@ -71,6 +72,7 @@ export function DesignDocumentRenderer({
             ? `${node.style.shadow.x}px ${node.style.shadow.y}px ${node.style.shadow.blur}px ${node.style.shadow.spread}px ${node.style.shadow.color}`
             : "none";
         const border = node.style.stroke ? `${node.style.strokeWidth}px solid ${node.style.stroke}` : "none";
+        const zIndex = getNodeSiblingZIndex(document, node.id);
         const autoLayout: {
             direction: "row" | "column";
             justifyContent: string;
@@ -98,6 +100,7 @@ export function DesignDocumentRenderer({
             background: node.style.fill,
             border,
             pointerEvents: mode === "editor" ? "none" : "auto",
+            zIndex,
             autoLayout,
         });
 

@@ -398,6 +398,44 @@ export function isAncestorNode(document: DesignDocumentSnapshot, ancestorId: str
     return false;
 }
 
+export function getClosestFrameAncestorId(document: DesignDocumentSnapshot, nodeId: string | null): string | null {
+    let currentNodeId = nodeId;
+
+    while (currentNodeId) {
+        const node = document.nodes[currentNodeId];
+
+        if (!node) {
+            return null;
+        }
+
+        if (node.type === "frame") {
+            return node.id;
+        }
+
+        currentNodeId = node.parentId;
+    }
+
+    return null;
+}
+
+export function getNodeSiblingZIndex(document: DesignDocumentSnapshot, nodeId: string): number {
+    const node = document.nodes[nodeId];
+
+    if (!node || !node.parentId) {
+        return 0;
+    }
+
+    const parentNode = document.nodes[node.parentId];
+
+    if (!parentNode || !isContainerNode(parentNode)) {
+        return 0;
+    }
+
+    const siblingIndex = parentNode.children.indexOf(nodeId);
+
+    return siblingIndex < 0 ? 0 : siblingIndex + 1;
+}
+
 export function getCreateParentId(document: DesignDocumentSnapshot, selectedNodeId: string | null) {
     if (selectedNodeId) {
         const selectedNode = document.nodes[selectedNodeId];
@@ -433,7 +471,7 @@ export function buildLayerItems(
     });
 
     if (hasChildren && !collapsedLayerIds.includes(node.id)) {
-        for (const childId of node.children) {
+        for (const childId of [...node.children].reverse()) {
             buildLayerItems(document, childId, collapsedLayerIds, depth + 1, items);
         }
     }

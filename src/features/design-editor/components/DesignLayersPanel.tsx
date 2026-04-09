@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 
 import {
-    ArrowDown01Icon,
-    ArrowRight01Icon,
     CodeSquareIcon,
     Cursor01Icon,
     ImageAdd02Icon,
@@ -17,6 +15,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Box, InputBase, Stack, Typography } from "@mui/material";
 
 import { designEditorStyles } from "@/src/customization/design-editor";
+import { DesignLayerRow } from "@/src/features/design-editor/components/layers/DesignLayerRow";
+import { getDraggedLayerNodeIds, type LayerDropTarget, resolveLayerDrop } from "@/src/features/design-editor/components/layers/design-layer-dnd";
 import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import { buildLayerItems } from "@/src/features/design-editor/utils/design-tree";
@@ -41,7 +41,10 @@ function getLayerIcon(type: string) {
 
 export function DesignLayersPanel() {
     const document = useDesignDocumentStore((state) => state.document);
+    const reparentNodes = useDesignDocumentStore((state) => state.reparentNodes);
     const [query, setQuery] = useState("");
+    const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+    const [dropTarget, setDropTarget] = useState<LayerDropTarget | null>(null);
 
     const selectedNodeIds = useDesignInteractionStore((state) => state.selectedNodeIds);
     const hoveredNodeId = useDesignInteractionStore((state) => state.hoveredNodeId);
@@ -100,12 +103,16 @@ export function DesignLayersPanel() {
                     const itemIcon = getLayerIcon(item.node.type);
 
                     return (
-                        <Stack
+                        <DesignLayerRow
                             key={item.id}
-                            direction="row"
-                            alignItems="center"
-                            spacing={0.6}
-                            onClick={(event) => {
+                            item={item}
+                            itemIcon={itemIcon}
+                            isSelected={isSelected}
+                            isHovered={isHovered}
+                            isCollapsed={isCollapsed}
+                            isDragging={draggedNodeId === item.id}
+                            dropTarget={dropTarget}
+                            onSelect={(event) => {
                                 if (event.shiftKey) {
                                     if (!isSelected) {
                                         selectNode(item.id, { additive: true });
@@ -116,55 +123,55 @@ export function DesignLayersPanel() {
 
                                 selectNode(item.id, { additive: event.metaKey || event.ctrlKey });
                             }}
-                            onMouseEnter={() => hoverNode(item.id)}
-                            onMouseLeave={() => hoverNode(null)}
-                            sx={designEditorStyles.layers.item(isSelected, isHovered)}
-                        >
-                            <Box
-                                onClick={(event) => {
-                                    event.stopPropagation();
+                            onHover={hoverNode}
+                            onToggleCollapse={() => {
+                                if (item.hasChildren) {
+                                    toggleLayerCollapsed(item.id);
+                                }
+                            }}
+                            onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData("text/plain", item.id);
+                                setDraggedNodeId(item.id);
+                                setDropTarget(null);
+                            }}
+                            onDragEnd={() => {
+                                setDraggedNodeId(null);
+                                setDropTarget(null);
+                            }}
+                            onDragOver={(event, mode) => {
+                                event.preventDefault();
 
-                                    if (item.hasChildren) {
-                                        toggleLayerCollapsed(item.id);
-                                    }
-                                }}
-                                sx={designEditorStyles.layers.collapseToggle(item.hasChildren)}
-                            >
-                                {item.hasChildren ? (
-                                    <HugeiconsIcon
-                                        icon={isCollapsed ? ArrowRight01Icon : ArrowDown01Icon}
-                                        size={14}
-                                        strokeWidth={1.9}
-                                    />
-                                ) : null}
-                            </Box>
+                                if (!document || !draggedNodeId) {
+                                    return;
+                                }
 
-                            <Box sx={designEditorStyles.layers.indent(item.depth)} />
+                                const draggedNodeIds = getDraggedLayerNodeIds(draggedNodeId, selectedNodeIds);
+                                const resolvedDrop = resolveLayerDrop(document, draggedNodeIds, { targetNodeId: item.id, mode });
 
-                            <Box sx={designEditorStyles.layers.itemIcon(isSelected)}>
-                                <HugeiconsIcon icon={itemIcon} size={16} strokeWidth={1.7} />
-                            </Box>
+                                event.dataTransfer.dropEffect = resolvedDrop ? "move" : "none";
+                                setDropTarget(resolvedDrop ? { targetNodeId: item.id, mode } : null);
+                            }}
+                            onDrop={(event, mode) => {
+                                event.preventDefault();
 
-                            <Stack sx={designEditorStyles.layers.textStack}>
-                                <Stack direction="row" spacing={0.8} alignItems="center" sx={designEditorStyles.layers.nameRow}>
-                                    <Typography sx={designEditorStyles.layers.name(isSelected)}>
-                                        {item.node.name}
-                                    </Typography>
-                                    {item.node.type === "frame" && item.node.layoutMode === "auto" ? (
-                                        <Typography sx={designEditorStyles.layers.autoBadge}>
-                                            Auto
-                                        </Typography>
-                                    ) : null}
-                                </Stack>
-                                <Typography sx={designEditorStyles.layers.typeLabel}>
-                                    {item.node.type}
-                                </Typography>
-                            </Stack>
+                                if (!document || !draggedNodeId) {
+                                    setDraggedNodeId(null);
+                                    setDropTarget(null);
+                                    return;
+                                }
 
-                            <Typography sx={designEditorStyles.layers.itemMeta}>
-                                {item.depth}
-                            </Typography>
-                        </Stack>
+                                const draggedNodeIds = getDraggedLayerNodeIds(draggedNodeId, selectedNodeIds);
+                                const resolvedDrop = resolveLayerDrop(document, draggedNodeIds, { targetNodeId: item.id, mode });
+
+                                if (resolvedDrop) {
+                                    reparentNodes(resolvedDrop);
+                                }
+
+                                setDraggedNodeId(null);
+                                setDropTarget(null);
+                            }}
+                        />
                     );
                 })}
             </Stack>

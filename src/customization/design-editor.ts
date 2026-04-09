@@ -1065,6 +1065,7 @@ export const designEditorStyles = {
             background: string;
             border: string;
             pointerEvents: "none" | "auto";
+            zIndex: number;
             autoLayout?: {
                 direction: "row" | "column";
                 justifyContent: string;
@@ -1094,6 +1095,7 @@ export const designEditorStyles = {
             transformOrigin: "center center",
             borderRadius: `${options.borderRadius}px`,
             opacity: options.opacity,
+            zIndex: options.zIndex,
             overflow: options.clipContent ? "hidden" : "visible",
             boxShadow: options.boxShadow,
             background: options.background,
@@ -1170,9 +1172,12 @@ export const designEditorStyles = {
             isCandidateParent: boolean;
             isSelected: boolean;
             isHovered: boolean;
+            isFrameHoverTarget: boolean;
+            isDescendantOfHoveredFrame: boolean;
             isActiveContainer: boolean;
             isEditingText: boolean;
             hasActiveSession: boolean;
+            zIndex: number;
         }) => ({
             ...(options.isRoot
                 ? {
@@ -1188,6 +1193,7 @@ export const designEditorStyles = {
             width: options.frame.width,
             height: options.frame.height,
             boxSizing: "border-box",
+            zIndex: options.zIndex,
             transform: `rotate(${options.frame.rotation}deg)`,
             transformOrigin: "center center",
             borderRadius: `${options.borderRadius}px`,
@@ -1196,8 +1202,10 @@ export const designEditorStyles = {
                 ? `2px solid ${designEditorTokens.selectionOutline}`
                 : options.isSelected
                     ? `1px solid ${designEditorTokens.selectionOutline}`
-                    : options.isHovered
+                    : options.isHovered || options.isFrameHoverTarget
                         ? `1px solid ${designEditorTokens.selectionOutlineHover}`
+                        : options.isDescendantOfHoveredFrame
+                            ? `1px dotted ${designEditorTokens.selectionOutlineHover}`
                         : options.isActiveContainer
                             ? `1px solid ${designEditorTokens.selectionOutlineSoft}`
                             : "1px solid transparent",

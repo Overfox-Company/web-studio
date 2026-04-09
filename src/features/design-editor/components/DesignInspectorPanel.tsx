@@ -35,17 +35,13 @@ import {
     ToggleSwitchRow,
 } from "@/src/features/design-editor/components/inspector/InspectorControls";
 import { uniquePalette } from "@/src/features/design-editor/components/color-picker/ColorConversionUtils";
+import { TEXT_FONT_FAMILY_OPTIONS } from "@/src/features/design-editor/constants/text-font-options";
 import { useDesignDocumentStore } from "@/src/features/design-editor/store/design-document.store";
 import { useDesignInteractionStore } from "@/src/features/design-editor/store/design-interaction.store";
 import type { DesignNode } from "@/src/features/design-editor/types/design.types";
 import { isFrameNode } from "@/src/features/design-editor/utils/design-tree";
 
 const TEXT_FONT_WEIGHT_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
-const TEXT_FONT_FAMILY_OPTIONS = [
-    { value: designEditorDefaults.typography.fontFamily, label: "IBM Plex Sans", previewFontFamily: designEditorDefaults.typography.fontFamily },
-    { value: '"IBM Plex Mono", monospace', label: "IBM Plex Mono", previewFontFamily: '"IBM Plex Mono", monospace' },
-] as const;
-
 function DisclosureRow({ label, summary, open, onToggle }: { label: string; summary: string; open: boolean; onToggle: () => void }) {
     return (
         <ButtonBase onClick={onToggle} sx={designEditorStyles.inspector.sectionDisclosure}>
@@ -160,6 +156,7 @@ function InspectorContent({ node }: { node: DesignNode }) {
 
                 {isFrameNode(node) ? (
                     <LinkedSpacingControl
+                        key={`padding-${node.id}-${node.layoutMode}`}
                         label="Padding"
                         value={node.layoutMode === "auto" ? node.autoLayout.padding : node.padding}
                         onChange={(nextValue) => patchNode(node.id, node.layoutMode === "auto"
